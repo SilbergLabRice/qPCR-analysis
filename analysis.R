@@ -109,17 +109,14 @@ if (experiment_mode == 'assay')
     
     if(plot_mean_and_sd == 'yes') {
       y_variable = quo(mean)
-      
-      results_abs_preserved <- results_abs # preserve individual data points before summarizing mean and SD
       results_abs %<>% group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # find mean and SD of individual copy #s for each replicate
       } 
     else {y_variable = quo(`Copy #`)}
     
     plt <- results_abs %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copy #')    # Specify the plotting variables 
 
-    if(plot_mean_and_sd == 'yes') {
-      plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) +  # plot errorbars if mean and SD are desired
-        geom_jitter(data = results_abs_preserved, aes(x = `assay_variable`, y = `Copy #`), size = 1, colour = 'black', alpha = .2, width = .2 ) } # Also plot the individual data points    
+    if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width))} # plot errorbars if mean and SD are desired
+    
   } 
   
   else plt <- results_relevant %>% ggplot(aes(x = `assay_variable`, y = CT, color = !!plot_colour_by))+ ylab(expression(C[q])) # plot CT values if absolute quantification is not needed
