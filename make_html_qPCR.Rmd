@@ -20,7 +20,7 @@ We want to test the efficiency of viral RNA recovery from wastewater by spiking 
 
 ## Pilot run 
 
-```{r cars}
+```{r pilot}
 source('general_functions.R')
 
 flnm <- 'WW1_Baylor-bovine_test'  # set the filename
@@ -32,7 +32,7 @@ source('analysis.R') ; res1 <- results_abs_preserved # run pilot samples and cap
 
 ## Larger run 
 
-```{r cars}
+```{r large_run}
 
 flnm <- 'WW2_Baylor-bovine'  # set the filename
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
@@ -129,7 +129,7 @@ plt4 %>% format_classic() %>% print()
 5/12 and 5/19 => PEG filtration method
 Vac, Water and WW => HA filtration (stadler lab)
 
-```{r PEG,CF}
+```{r interactive}
 plt3 %>% format_classic() %>% ggplotly()
 
 # iplt3 <- plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>%
@@ -156,7 +156,7 @@ plt5 %>% format_classic() %>% print()
 
 5/12 and 5/19 => PEG filtration
 
-```{r 12,19}
+```{r 5/19}
 
 plt6 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/19')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
