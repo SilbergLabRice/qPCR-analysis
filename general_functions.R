@@ -4,7 +4,7 @@
   # Make sure to include raw data as well
 
 # calling libraries ; make sure they are installed (install.packages)
-library(readxl); library(magrittr); library(tidyverse); library(ggrepel); library(googlesheets4) 
+library(readxl); library(magrittr); library(tidyverse); library(ggrepel); library(googlesheets4); library(plotly) 
 
 # reading files and manipulating columns ----
 
@@ -110,11 +110,11 @@ plottm1 <- function(results_relevant)
 # plot formatting ---- 
   
   # plot formatting function : format as classic, colours = Set1
-  format_classic <- function(plt, title_name, plot_assay_variable)
+  format_classic <- function(plt)
   { # formats plot as classic, with colour palette Set1, centred title, angled x axis labels
     plt <- plt +
-      theme_classic() + scale_color_brewer(palette="Set1") + 
-      ggtitle(title_name) + xlab(plot_assay_variable)
+      theme_classic() + scale_color_brewer(palette="Set1")
+      
   }
   
   # plot formatting function : format as logscale

@@ -1,5 +1,5 @@
 ---
-title: "WW1_Baylor-Spike-in pilot"
+title: "WW-5/12-5/19_Baylor-Spike-in"
 author: "Prashant Kalvapalle"
 date: "1 June 2020"
 output: 
@@ -11,27 +11,158 @@ output:
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 8, fig.height = 4)
+knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 12, fig.height = 4)
 ```
 
 ## Goal of the analysis
 
 We want to test the efficiency of viral RNA recovery from wastewater by spiking in known ammounts of bovine viruses and quantifying by qPCR. 
 
-## Running source codes
+## Pilot run 
 
 ```{r cars}
 source('general_functions.R')
-source('analysis.R')
+
+flnm <- 'WW1_Baylor-bovine_test'  # set the filename
+flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
+plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B36:N44')
+
+source('analysis.R') ; res1 <- results_abs_preserved # run pilot samples and capture formatted results
 ```
 
-## Normalized recovery calculations
+## Larger run 
+
+```{r cars}
+
+flnm <- 'WW2_Baylor-bovine'  # set the filename
+flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
+plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B47:N55')
+
+source('analysis.R') ; res2 <- results_abs_preserved # run pilot samples and capture formatted results
+```
+
+## Complete data
 
 ```{r calculations}
-proc_data <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C3:I93')
-proc_data %>% separate(`Tube ID`, C(`Tube ID`, 'Biological replicate')) %>% rename('Copy #' = `Copy # (mean)`) # merge biological replicates
-proc_summary %>% proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD
+proc_data <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C2:P92') 
+proc_data %<>% separate(`Tube ID`, into = c('Tube ID', 'Biological_replicate')) %>% arrange(Target, `Sample Name`) # merge biological replicates
+proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`) %>% summarise_at(vars(2:5), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD for biological replicates
+
+tube_order <- proc_summary %>% filter(`Sample Name` == '5/12') %>% arrange(`Copy #_mean`) %>% pull(`Tube ID`) # order samples by 5/12 ascending order
+proc_summary$`Tube ID` %<>%  fct_relevel(levels = tube_order) # order samples by 5/12 ascending order
+
+concise_summary <- proc_summary %>% gather(key = 'Measurement', value = 'Reading', -Target, -`Sample Name`, -`Tube ID`) %>% separate(Measurement, into = c('Measurement','val'),"_") %>% spread(val,Reading) # Seperate mean and variance and group by variable of measurement
 
 
-plt1 <- proc_data %>% ggplot(aes(x = `Tube ID`, y = `Recovered (copies/l)`, colour = Target)) + ylab('Copy #')
+plt1 <- proc_summary %>% ggplot(aes(x = `Tube ID`, y = `Copy #_mean`, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = `Copy #_mean` - `Copy #_sd`, ymax = `Copy #_mean` + `Copy #_sd`, width = errorbar_width)) +
+  geom_jitter(data = proc_data, aes(x = `Tube ID`, y = `Copy #`), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/ul RNA')
+
+plt1 %>% format_classic() %>% format_logscale() %>% print()
+```
+
+
+## Expected vs Recovered
+
+Small circles are individual data points, coloured large circles show average of biological replicates
+- open black circles = copies of virus spiked in (estimate)
+- grey circles = calculated genome copies recovered (per litre wastewater) 
+
+```{r comparision_plot}
+plt2 <- proc_summary %>% ggplot(aes(x = `Tube ID`, y = `Recovered_mean`, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = `Recovered_mean` - `Recovered_sd`, ymax = `Recovered_mean` + `Recovered_sd`, width = errorbar_width)) +
+  geom_jitter(data = proc_data, aes(x = `Tube ID`, y = Recovered), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+  geom_point(data = proc_data, aes(x = `Tube ID`, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/l WW')
+
+plt2 %>% format_classic() %>% format_logscale() %>% print()
+
+# plt2 <- concise_summary %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+#   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
+#   geom_jitter(data = proc_data, aes(x = `Tube ID`, y = `Copy #`), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+#   geom_point(data = proc_data, aes(x = `Tube ID`, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
+#   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+#   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/l WW')
+# 
+# plt2 %>% format_classic() %>% format_logscale() %>% print()
+
+```
+
+## Recovery fractions
+
+5/12 - CF => Centricon filtration method
+5/12 and 5/19 => PEG filtration method
+Vac, Water and WW => HA filtration (stadler lab)
+
+```{r fraction}
+
+plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
+  geom_jitter(data = proc_data, aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
+
+plt3 %>% format_classic() %>% print()
+
+```
+
+## PEG vs centricon filters
+
+5/12 - CF => Centricon filtration 
+5/12 and 5/19 => PEG filtration
+
+```{r PEG,CF}
+
+plt4 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/12')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
+
+plt4 %>% format_classic() %>% print()
+```
+## Interactive recovery fraction
+
+5/12 - CF => Centricon filtration method
+5/12 and 5/19 => PEG filtration method
+Vac, Water and WW => HA filtration (stadler lab)
+
+```{r PEG,CF}
+plt3 %>% format_classic() %>% ggplotly()
+
+# iplt3 <- plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>%
+#  plot_ly(x = ~`Tube ID`, y = ~mean, color = ~Target, type = 'scatter', mode = 'markers') + facet_grid()
+```
+
+## 5/12 vs 5/19
+
+5/12 - CF => Centricon filtration 
+5/12 and 5/19 => PEG filtration
+
+```{r 12,19}
+
+plt5 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/1.$')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
+  geom_jitter(data = filter(proc_data,  str_detect(`Sample Name`, '5/1.$')), aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
+
+plt5 %>% format_classic() %>% print()
+```
+
+## 5/19
+
+5/12 and 5/19 => PEG filtration
+
+```{r 12,19}
+
+plt6 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/19')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
+  geom_jitter(data = filter(proc_data,  str_detect(`Sample Name`, '5/19')), aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
+
+plt6 %>% format_classic() %>% print()
 ```

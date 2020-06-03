@@ -8,9 +8,8 @@ source('./general_functions.R') # Source the general_functions file before runni
 # User inputs ----
 # choose file name, title for plots and experiment mode (file name starts in the same directory as Rproject) 
 
-flnm <- 'WW1_Baylor-bovine_test'  # set the filename
-flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
-plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate import setup', range = 'G1:S9')
+
+# file name, path and sample name sheet will be loaded in the RMD file
 
 title_name <-'Baylor RNA extracts_pilot run'
 experiment_mode <- 'assay' # options ('small_scale' ; 'assay') ; future implementation: 'custom'. Explanation below
@@ -48,7 +47,7 @@ plate_template <- read_plate_to_column(plate_template_raw, 'Sample Name') # conv
 results_relevant %<>% mutate(`Sample Name` = plate_template$`Sample Name`) # Incorporate samples names from the google doc 
 results_relevant$Target %<>% str_replace('BSRV', 'BRSV') # correcting mis-spelled name of BRSV target
 
-rm(fl, plate_template_raw)  # remove old data for sparsity
+# rm(fl, plate_template_raw)  # remove old data for sparsity
 
 # Plots for small scale assays: Meant for troublshooting data (facetted by primer names; naming: 'Sample Name' primer-pair)----
 
@@ -125,8 +124,8 @@ if (experiment_mode == 'assay')
   else plt <- results_relevant %>% ggplot(aes(x = `assay_variable`, y = CT, color = !!plot_colour_by))+ ylab(expression(C[q])) # plot CT values if absolute quantification is not needed
     
   # Formatting plot
-  plt <- plt + geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
-  plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
+  plt <- plt + geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') + ggtitle(title_name) + xlab(plot_assay_variable) # plot points and facetting
+  plt.formatted <- plt %>% format_classic() %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
   
   print(plt.formatted)
 
