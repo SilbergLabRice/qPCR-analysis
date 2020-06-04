@@ -205,3 +205,15 @@ plt3 %>% format_classic() %>% ggplotly()
 # iplt3 <- plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>%
 #  plot_ly(x = ~`Tube ID`, y = ~mean, color = ~Target, type = 'scatter', mode = 'markers') + facet_grid()
 ```
+
+### % variability
+
+```{r biological_variability}
+
+plt7 <- concise_summary %>% mutate(variation = (sd/mean)* 100) %>% filter(`Sample Name` == '5/19', Measurement == 'Recovered') %>% ggplot(aes(x = `Tube ID`, y = variation)) +
+  geom_point(size = 2) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification', subtitle = 'High variability among biological replicates') + ylab('% variability (sd/mean) Recovered copies/l ww')
+
+plt7 %>% format_classic() %>% print()
+```
