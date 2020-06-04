@@ -18,8 +18,11 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 12, fig.he
 
 We want to test the efficiency of viral RNA recovery from wastewater by spiking in known ammounts of bovine viruses and quantifying by qPCR. 
 
-## Pilot run 
+## All data
 
+### Pilot run 
+
+ Grey points = Technical replicates of RT-qPCR
 ```{r pilot}
 source('general_functions.R')
 
@@ -30,7 +33,7 @@ plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRc
 source('analysis.R') ; res1 <- results_abs_preserved # run pilot samples and capture formatted results
 ```
 
-## Larger run 
+### Larger run 
 
 ```{r large_run}
 
@@ -41,11 +44,13 @@ plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRc
 source('analysis.R') ; res2 <- results_abs_preserved # run pilot samples and capture formatted results
 ```
 
-## Complete data
+### Complete data
 
+ Grey points = Biological replicates of wastewater from the same WWTP 
+ 
 ```{r calculations}
 proc_data <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C2:P92') 
-proc_data %<>% separate(`Tube ID`, into = c('Tube ID', 'Biological_replicate')) %>% arrange(Target, `Sample Name`) # merge biological replicates
+proc_data %<>% separate(`Tube ID`, into = c('Tube ID', 'Biological_replicate')) %>% mutate(`Sample Name` = str_replace(`Sample Name`, 'WW', 'HA')) %>% arrange(Target, `Sample Name`) # merge biological replicates
 proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`) %>% summarise_at(vars(2:5), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD for biological replicates
 
 tube_order <- proc_summary %>% filter(`Sample Name` == '5/12') %>% arrange(`Copy #_mean`) %>% pull(`Tube ID`) # order samples by 5/12 ascending order
@@ -64,11 +69,12 @@ plt1 %>% format_classic() %>% format_logscale() %>% print()
 ```
 
 
-## Expected vs Recovered
+### Expected vs Recovered
 
 Small circles are individual data points, coloured large circles show average of biological replicates
-- open black circles = copies of virus spiked in (estimate)
-- grey circles = calculated genome copies recovered (per litre wastewater) 
+
+* open black circles = copies of virus spiked in (estimate)
+* grey circles = calculated genome copies recovered (per litre wastewater) 
 
 ```{r comparision_plot}
 plt2 <- proc_summary %>% ggplot(aes(x = `Tube ID`, y = `Recovered_mean`, colour = Target)) +
@@ -80,22 +86,13 @@ plt2 <- proc_summary %>% ggplot(aes(x = `Tube ID`, y = `Recovered_mean`, colour 
 
 plt2 %>% format_classic() %>% format_logscale() %>% print()
 
-# plt2 <- concise_summary %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
-#   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
-#   geom_jitter(data = proc_data, aes(x = `Tube ID`, y = `Copy #`), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
-#   geom_point(data = proc_data, aes(x = `Tube ID`, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
-#   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
-#   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/l WW')
-# 
-# plt2 %>% format_classic() %>% format_logscale() %>% print()
-
 ```
 
-## Recovery fractions
+### Recovery fractions
 
-5/12 - CF => Centricon filtration method
-5/12 and 5/19 => PEG filtration method
-Vac, Water and WW => HA filtration (stadler lab)
+* 5/12 (CF) => Centricon filtration method
+* 5/12 and 5/19 => PEG filtration method
+* Vac, Water and HA => HA filtration (stadler lab)
 
 ```{r fraction}
 
@@ -109,10 +106,50 @@ plt3 %>% format_classic() %>% print()
 
 ```
 
-## PEG vs centricon filters
+## Concise plots
 
-5/12 - CF => Centricon filtration 
-5/12 and 5/19 => PEG filtration
+### Expected vs Recovered: Selected
+
+Small circles are individual data points, coloured large circles show average of biological replicates
+
+* open black circles = copies of virus spiked in (estimate)
+* grey circles = calculated genome copies recovered (per litre wastewater) 
+
+```{r comparision_plot2}
+proc_data_sel <- filter(proc_data, str_detect(`Sample Name`,'5/|HA')) # filter the data to be plotted
+
+plt2s <- proc_summary %>% filter(str_detect(`Sample Name`,'5/|HA')) %>% ggplot(aes(x = `Tube ID`, y = `Recovered_mean`, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = `Recovered_mean` - `Recovered_sd`, ymax = `Recovered_mean` + `Recovered_sd`, width = errorbar_width)) +
+  geom_jitter(data = proc_data_sel, aes(x = `Tube ID`, y = Recovered), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+  geom_point(data = proc_data_sel, aes(x = `Tube ID`, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/l WW')
+
+plt2s %>% format_classic() %>% format_logscale() %>% print()
+```
+
+### Recovery fractions: Selected
+
+* 5/12 (CF) => Centricon filtration method
+* 5/12 and 5/19 => PEG filtration method
+* HA => HA filtration (stadler lab)
+
+```{r fraction2}
+
+plt3s <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`,'5/|HA')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
+  geom_jitter(data = proc_data_sel, aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+  ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
+
+plt3s %>% format_classic() %>% print()
+
+```
+
+### PEG vs centricon filters
+
+* 5/12 (CF) => Centricon filtration 
+* 5/12 and 5/19 => PEG filtration
 
 ```{r PEG,CF}
 
@@ -123,23 +160,12 @@ plt4 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detec
 
 plt4 %>% format_classic() %>% print()
 ```
-## Interactive recovery fraction
 
-5/12 - CF => Centricon filtration method
-5/12 and 5/19 => PEG filtration method
-Vac, Water and WW => HA filtration (stadler lab)
 
-```{r interactive}
-plt3 %>% format_classic() %>% ggplotly()
+### 5/12 vs 5/19
 
-# iplt3 <- plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>%
-#  plot_ly(x = ~`Tube ID`, y = ~mean, color = ~Target, type = 'scatter', mode = 'markers') + facet_grid()
-```
-
-## 5/12 vs 5/19
-
-5/12 - CF => Centricon filtration 
-5/12 and 5/19 => PEG filtration
+* 5/12 (CF) => Centricon filtration 
+* 5/12 and 5/19 => PEG filtration
 
 ```{r 12,19}
 
@@ -152,7 +178,7 @@ plt5 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detec
 plt5 %>% format_classic() %>% print()
 ```
 
-## 5/19
+### 5/19
 
 5/12 and 5/19 => PEG filtration
 
@@ -165,4 +191,17 @@ plt6 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detec
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
 
 plt6 %>% format_classic() %>% print()
+```
+
+## Interactive: Recovery fraction
+
+* 5/12 (CF) => Centricon filtration method
+* 5/12 and 5/19 => PEG filtration method
+* Vac, Water and HA => HA filtration (stadler lab)
+
+```{r interactive}
+plt3 %>% format_classic() %>% ggplotly()
+
+# iplt3 <- plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>%
+#  plot_ly(x = ~`Tube ID`, y = ~mean, color = ~Target, type = 'scatter', mode = 'markers') + facet_grid()
 ```
