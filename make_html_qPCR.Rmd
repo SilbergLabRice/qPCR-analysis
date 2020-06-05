@@ -42,6 +42,15 @@ flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
 plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B47:N55')
 
 source('analysis.R') ; res2 <- results_abs_preserved # run pilot samples and capture formatted results
+
+compiled_results <- bind_rows(res1, res2) %>% rename('Tube ID' = assay_variable, Cq = CT) %>% separate(`Tube ID`, c('unique_tube', 'biological_replicate'), remove = F) %>% mutate(unique_tube = as.numeric(unique_tube)) %>% arrange(`Sample Name`, unique_tube, biological_replicate) %>% select(`Sample Name`, Target, `Tube ID`, Cq, `Copy #`, everything()) # combine the data from WW1 and WW2; order by sample name and tube ID
+
+write_sheet(compiled_results,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = 'Baylor 5/12; 5/19')
+
+# bring the sample names list(s)
+tube_lookup <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=1935582781', sheet = 'RNA extracts', range = 'A1:D83') %>% rename('Tube ID' = `Label on tube`, 'Biobot_ID' = 2, 'Sample Name' = 4) %>% mutate(Metadata = as.character(Metadata), `Tube ID` = as.character(`Tube ID`)) %>% fill(`Sample Name`)
+
+biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'E:F'))
 ```
 
 ### Complete data
