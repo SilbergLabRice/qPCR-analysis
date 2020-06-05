@@ -8,11 +8,11 @@ source('./general_functions.R') # Source the general_functions file before runni
 # User inputs ----
 # choose file name, title for plots and experiment mode (file name starts in the same directory as Rproject) 
 
-flnm <- 'WW4-BRSV_BCoV_Vaccines'  # set the filename
+flnm <- 'WW3_Baylor-N1-N2'  # set the filename
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
 plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate import setup', range = 'G1:S9')
 
-title_name <-'Baylor RNA extracts_pilot run'
+title_name <- flnm
 experiment_mode <- 'assay' # options ('small_scale' ; 'assay') ; future implementation: 'custom'. Explanation below
   # 'assay' =  Plots for Assays (facetted by Sample category = control vs experiment ; naming: 'Sample Name'_variable primer pair)
   # 'small_scale' = plots for troubleshooting expts : faceted by primer pair and sample name = template
