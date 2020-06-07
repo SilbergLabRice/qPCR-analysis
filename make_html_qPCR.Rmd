@@ -45,12 +45,14 @@ source('analysis.R') ; res2 <- results_abs_preserved # run pilot samples and cap
 
 compiled_results <- bind_rows(res1, res2) %>% rename('Tube ID' = assay_variable, Cq = CT) %>% separate(`Tube ID`, c('unique_tube', 'biological_replicate'), remove = F) %>% mutate(unique_tube = as.numeric(unique_tube)) %>% arrange(`Sample Name`, unique_tube, biological_replicate) %>% select(`Sample Name`, Target, `Tube ID`, Cq, `Copy #`, everything()) # combine the data from WW1 and WW2; order by sample name and tube ID
 
-write_sheet(compiled_results,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = 'Baylor 5/12; 5/19')
-
 # bring the sample names list(s)
 tube_lookup <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=1935582781', sheet = 'RNA extracts', range = 'A1:D83') %>% rename('Tube ID' = `Label on tube`, 'Biobot_ID' = 2, 'Sample Name' = 4) %>% mutate(Metadata = as.character(Metadata), `Tube ID` = as.character(`Tube ID`)) %>% fill(`Sample Name`)
 
-biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'E:F'))
+biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'D:F')) %>% rename('Biobot_ID' = `BioBot ID#`) %>% mutate(Biobot_ID = str_remove(Biobot_ID,'\\.'))
+
+labelled_results <- left_join(compiled_results, tube_lookup) %>% left_join(biobot_lookup)
+
+write_sheet(labelled_results,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = 'Baylor 5/12; 5/19') # save results to a google sheet
 ```
 
 ### Complete data
@@ -58,9 +60,9 @@ biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('http
  Grey points = Biological replicates of wastewater from the same WWTP 
  
 ```{r calculations}
-proc_data <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C2:P92') 
+proc_data <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C2:R119') 
 proc_data %<>% separate(`Tube ID`, into = c('Tube ID', 'Biological_replicate')) %>% mutate(`Sample Name` = str_replace(`Sample Name`, 'WW', 'HA')) %>% arrange(Target, `Sample Name`) # merge biological replicates
-proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`) %>% summarise_at(vars(2:5), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD for biological replicates
+proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`) %>% summarise_at(vars(2:6), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD for biological replicates
 
 tube_order <- proc_summary %>% filter(`Sample Name` == '5/12') %>% arrange(`Copy #_mean`) %>% pull(`Tube ID`) # order samples by 5/12 ascending order
 proc_summary$`Tube ID` %<>%  fct_relevel(levels = tube_order) # order samples by 5/12 ascending order
