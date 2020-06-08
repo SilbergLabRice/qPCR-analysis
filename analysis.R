@@ -28,6 +28,7 @@ std_par <- tibble(                       # Input the slope and intercept from st
   slope =  c(-3.62, -3.49, -3, -3.12, -3.09, -3.1),
   intercept = c(39, 39, 39, 40, 39, 40) # values for various targets
 )
+lod_N <- 20 # limit of detection according to standard curve
 plot_normalized_backbone <- 'no' # Options: ('yes' or 'no'); plots copy #'s normalized to backbone 
 plot_mean_and_sd <- 'yes' # Options: ('yes' or 'no'); plots mean and errorbars instead of each replicate as a point: Only in absolute_quantification mode
 plot_exclude_category <- '^none' # Regex pattern: 'Controls2', '^MHT*', '^none; exclude categories for plotting; ex: Controls etc.: filters based on `Sample Name`: works only in assay mode
@@ -84,11 +85,12 @@ if(plot_mean_and_sd == 'yes') {
 plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
 
 if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
-  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`), colour = 'black', size = 1, alpha = .2, width = .2) } # plot raw data
+  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`, colour = Target), size = 1, alpha = .2, width = .2) } # plot raw data
 
 
 # Formatting plot
-plt <- plt + geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
+plt <- plt + geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') + # plot points and facetting
+  annotate('rect', xmin = 0, xmax = Inf, ymin = 0, ymax = lod_N, alpha = .1)
 plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
 
 print(plt.formatted)
