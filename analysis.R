@@ -8,7 +8,7 @@ source('./general_functions.R') # Source the general_functions file before runni
 # User inputs ----
 # choose file name, title for plots and experiment mode (file name starts in the same directory as Rproject) 
 
-flnm <- 'WW4-BRSV_BCoV_Vaccines'  # set the filename
+flnm <- 'WW5-Inhibition test1'  # set the filename
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
 plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate import setup', range = 'G1:S9')
 
@@ -53,44 +53,44 @@ rm(fl, plate_template_raw)  # remove old data for sparsity
 # Separate the sample name into columns and make factors in the right order for plotting (same order as the plate setup)
 
 # isolate the primer pair and assay_variable into 3 columns : Sample name, assay variable and primer pair 
-results_relevant %<>% separate(`Sample Name`,c(NA, 'Sample Name'),'-') %>% separate(`Sample Name`,c('Sample Name','Tube ID'),'_') %>% mutate(`Tube ID` = if_else(`Sample Name` == 'NTC', '0', `Tube ID`))
-
-results_relevant %<>% separate(`Tube ID`, c('assay_variable', 'biological_replicates'), remove = F)
-
-# Factorise the sample name in the order for plotting
-results_relevant %<>% mutate_if(is.character,as_factor) 
-
-# re-arrange the results in same order as the above factors (columnwise order of the plate)
-results_relevant %<>% arrange(`Well Position`) 
+results_relevant %<>% separate(`Sample Name`,c(NA, 'Sample Name'),'-') %>% separate(`Sample Name`,c('Sample Name','Tube ID'),'_') %>%  # split sample name into hierarchial labels 
+  separate(`Tube ID`, c('assay_variable', 'biological_replicates'), remove = F) %>% mutate(`Tube ID` = if_else(`Sample Name` == 'NTC', '0', `Tube ID`), assay_variable = as.numeric(str_remove(assay_variable, 'x'))) %>% 
+  drop_na(CT) %>% # remove rows with no CT value
+  mutate_if(is.character,as_factor) %>% # Factorise the sample name in the order for plotting
+  arrange(`Well Position`)  # re-arrange the results in same order as the above factors (columnwise order of the plate)
+  
 
 # select samples to plot (or to exclude write a similar command)
-results_relevant %<>% filter(str_detect(`Sample Name`, paste('^', plot_select_template, sep = ''))) # str_detect will find for regular expression; ^x => starting with x
-
-results_relevant %<>% filter(!str_detect(`Sample Name`, plot_exclude_category)) # exclude unwanted samples categories (sample_name) 
-results_relevant %<>% filter(!str_detect(assay_variable, plot_exclude_assay_variable)) # excluding unwanted samples from assay_variable
+results_relevant %<>% filter(str_detect(`Sample Name`, paste('^', plot_select_template, sep = ''))) %>%  # str_detect will find for regular expression; ^x => starting with x
+  filter(!str_detect(`Sample Name`, plot_exclude_category)) %>%  # exclude unwanted samples categories (sample_name) 
+  filter(!str_detect(assay_variable, plot_exclude_assay_variable)) # excluding unwanted samples from assay_variable
 
 
 # Computing copy number from standard curve linear fit information
-results_relevant_grouped <- results_relevant %>% group_by(Target) 
-results_abs <- results_relevant_grouped %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
+results_abs <- results_relevant %>% group_by(Target)%>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
 
 if(plot_mean_and_sd == 'yes') {
   y_variable = quo(mean)
   concise_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # find mean and SD of individual copy #s for each replicate
   data_to_plot <- concise_results_abs
-  
+
   } else {y_variable = quo(`Copy #`); data_to_plot <- results_abs}
 
-plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
+plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = `Sample Name`)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables
 
 if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
   geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`), colour = 'black', size = 1, alpha = .2, width = .2) } # plot raw data
 
 
 # Formatting plot
-plt <- plt + geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
+plt <- plt + geom_point(size = 2) + geom_line() + 
+  scale_x_continuous(name = 'Dilution factor', breaks = c(1,5,10)) +
+  facet_grid(~Target, scales = 'free_x', space = 'free_x') # plot points and facetting
 plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
 
 print(plt.formatted)
+
+  
+
 
 # ggsave('qPCR analysis/WW1_Baylor-bovine_pilot.png', plot = plt.formatted, width = 5, height = 4)
