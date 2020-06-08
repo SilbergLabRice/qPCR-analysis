@@ -24,9 +24,9 @@ plot_assay_variable <- 'Sample' # printed on the x axis of the graph
 plot_colour_by <- quo(Target) # Options : (quo(Target) or quo(Sample Name); Determines which variable is chosen for plotting in different colours
 plot_mode <-  'absolute_quantification'  # Options : ('absolute_quantification' or ''); absolute_quantification will calculate copy #'s based on intercept and slope from standard curve - manually entered below ; else, Cq values are plotted
 std_par <- tibble(                       # Input the slope and intercept from standard curve of various primer pairs/targets here - Target should match Target field (provided in excel sheet - Sample input reference.csv) 
-  target = c('BRSV_N', 'BCoV_M', 'N1_CoV2', 'N2_CoV2'),
-  slope =  c(-3.62, -3.49, -3, -3.12),
-  intercept = c(39, 39, 39, 40) # values for various targets
+  target = c('BRSV_N', 'BCoV_M', 'N1_CoV2', 'N2_CoV2', 'N1_multiplex',  'N2_multiplex'),
+  slope =  c(-3.62, -3.49, -3, -3.12, -3.09, -3.1),
+  intercept = c(39, 39, 39, 40, 39, 40) # values for various targets
 )
 plot_normalized_backbone <- 'no' # Options: ('yes' or 'no'); plots copy #'s normalized to backbone 
 plot_mean_and_sd <- 'yes' # Options: ('yes' or 'no'); plots mean and errorbars instead of each replicate as a point: Only in absolute_quantification mode
@@ -42,8 +42,9 @@ sample_order = columnwise_index(fl) # this gives a vector to order the samples c
 results_relevant <- fl$Results %>% select(`Well Position`, `Sample Name`, CT, starts_with('Tm'),`Target Name`) %>% rename(Target = `Target Name`) %>%  .[sample_order,] # select only the results used for plotting, calculations etc. and arrange them according to sample order
 
 plate_template <- read_plate_to_column(plate_template_raw, 'Sample Name') # convert plate template (sample names) into a single vector, columnwise
-results_relevant %<>% mutate(`Sample Name` = plate_template$`Sample Name`) # Incorporate samples names from the google doc 
-results_relevant$Target %<>% str_replace('BSRV', 'BRSV') # correcting mis-spelled name of BRSV target
+
+results_relevant %<>% select(-`Sample Name`) %>% right_join(plate_template, by = 'Well Position') %>%  # Incorporate samples names from the google sheet
+  mutate(Target = str_replace(Target, 'BSRV', 'BRSV'))  # correcting mis-spelled name of BRSV target
 
 rm(fl, plate_template_raw)  # remove old data for sparsity
 
@@ -71,8 +72,7 @@ results_relevant %<>% filter(!str_detect(assay_variable, plot_exclude_assay_vari
 
 
 # Computing copy number from standard curve linear fit information
-results_relevant_grouped <- results_relevant %>% group_by(Target) 
-results_abs <- results_relevant_grouped %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
+results_abs <- results_relevant %>% group_by(Target) %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
 
 if(plot_mean_and_sd == 'yes') {
   y_variable = quo(mean)

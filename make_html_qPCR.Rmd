@@ -1,7 +1,7 @@
 ---
 title: "WW4_BRSV_BCoV_Vaccines"
 author: "Prashant Kalvapalle"
-date: "4 June 2020"
+date: "8 June 2020"
 output: 
   html_document:
     theme: flatly
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 8, fig.hei
 
 ## Goal of the analysis
 
-Quantifying RNA recovery from undiluted vaccine by RT-qPCR. 
+Quantifying CoV2-N1,N2 in a few samples from 5/12 and 5/19. 
 
 ## Running source codes
 
