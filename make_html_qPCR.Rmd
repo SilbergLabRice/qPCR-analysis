@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 8, fig.hei
 
 ## Goal of the analysis
 
-Quantifying RNA recovery from undiluted vaccine by RT-qPCR. 
+Quantifying recovery of spiked bovine CoV vaccine and comparison between variants of HA filtration method
 
 ## Running source codes
 

@@ -8,7 +8,7 @@ source('./general_functions.R') # Source the general_functions file before runni
 # User inputs ----
 # choose file name, title for plots and experiment mode (file name starts in the same directory as Rproject) 
 
-flnm <- 'WW4-BRSV_BCoV_Vaccines'  # set the filename
+flnm <- 'WW6-601 HA_recovery'  # set the filename
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
 plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate import setup', range = 'G1:S9')
 
@@ -71,12 +71,11 @@ results_relevant %<>% filter(!str_detect(assay_variable, plot_exclude_assay_vari
 
 
 # Computing copy number from standard curve linear fit information
-results_relevant_grouped <- results_relevant %>% group_by(Target) 
-results_abs <- results_relevant_grouped %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
+results_abs <- results_relevant %>% group_by(Target)  %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
 
 if(plot_mean_and_sd == 'yes') {
   y_variable = quo(mean)
-  concise_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # find mean and SD of individual copy #s for each replicate
+  concise_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd(., na.rm = T))) # find mean and SD of individual copy #s for each replicate
   data_to_plot <- concise_results_abs
   
   } else {y_variable = quo(`Copy #`); data_to_plot <- results_abs}
@@ -84,7 +83,7 @@ if(plot_mean_and_sd == 'yes') {
 plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
 
 if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
-  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`), colour = 'black', size = 1, alpha = .2, width = .2) } # plot raw data
+  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`, colour = Target), size = 1, alpha = .2, width = .2) } # plot raw data
 
 
 # Formatting plot
