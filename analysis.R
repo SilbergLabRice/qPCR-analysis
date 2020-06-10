@@ -54,7 +54,7 @@ rm(fl, plate_template_raw)  # remove old data for sparsity
 
 # isolate the primer pair and assay_variable into 3 columns : Sample name, assay variable and primer pair 
 results_relevant %<>% separate(`Sample Name`,c(NA, 'Sample Name'),'-') %>% separate(`Sample Name`,c('Sample Name','Tube ID'),'_') %>%  # split sample name into hierarchial labels 
-  separate(`Tube ID`, c('assay_variable', 'biological_replicates'), remove = F) %>% mutate(`Tube ID` = if_else(`Sample Name` == 'NTC', '0', `Tube ID`), assay_variable = as.numeric(str_remove(assay_variable, 'x'))) %>% 
+  separate(`Tube ID`, c('assay_variable', 'biological_replicates'), remove = F) %>% mutate(`Tube ID` = if_else(`Sample Name` == 'NTC', '0', `Tube ID`), assay_variable = 1/as.numeric(str_remove(assay_variable, 'x'))) %>% 
   drop_na(CT) %>% # remove rows with no CT value
   mutate_if(is.character,as_factor) %>% # Factorise the sample name in the order for plotting
   arrange(`Well Position`)  # re-arrange the results in same order as the above factors (columnwise order of the plate)
@@ -79,14 +79,14 @@ if(plot_mean_and_sd == 'yes') {
 plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = `Sample Name`)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables
 
 if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
-  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`), colour = 'black', size = 1, alpha = .2, width = .2) } # plot raw data
+  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`, colour = `Sample Name`), size = 1, alpha = .2, width = .1) } # plot raw data
 
 
 # Formatting plot
 plt <- plt + geom_point(size = 2) + geom_line() + 
-  scale_x_continuous(name = 'Dilution factor', breaks = c(1,5,10)) +
+  scale_x_log10(name = 'Dilution factor', breaks = c(.1, .2, 1)) +
   facet_grid(~Target, scales = 'free_x', space = 'free_x') # plot points and facetting
-plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
+plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale_y # formatting plot, axes labels, title and logcale plotting
 
 print(plt.formatted)
 

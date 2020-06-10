@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 8, fig.hei
 
 ## Goal of the analysis
 
-Quantifying the extent of inhibition due to wastewater matrix components in eluted RNA
+Quantifying the extent of inhibition due to wastewater matrix components in eluted RNA, by serial dilution
 
 ## Running source codes
 
