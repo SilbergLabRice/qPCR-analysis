@@ -109,6 +109,27 @@ plottm1 <- function(results_relevant)
 
 # plot formatting ---- 
   
+# Plotting mean, sd and individual replicates jitter
+plot_mean_sd_jitter <- function(long_data, raw_data, measure_var, sample_var = '.*', colour_var = 'Target')
+{ # Convenient handle for repetitive plotting in the same format
+  
+  # filtering variables by user inputs
+  long_data %<>% filter(Measurement == measure_var, str_detect(`Sample Name`, sample_var))
+  raw_data %<>% filter(str_detect(`Sample Name`, sample_var))
+  
+  # quoting user inputs
+  q_measure <- enquo(measure_var)
+  q_colour <- enquo(colour_var)
+  
+  plt1 <- long_data %>% ggplot(aes(x = Symbol, y = mean, colour = !!q_colour)) +
+    geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), width = .1) +
+    geom_jitter(data = raw_data, aes(x = Symbol, y = !!q_measure, colour = !!q_colour), size = 1, alpha = .2, width = .2 ) + 
+    facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
+    ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/ul RNA') %>% 
+    format_classic() %>% format_logscale()
+ 
+}
+
   # plot formatting function : format as classic, colours = Set1
   format_classic <- function(plt)
   { # formats plot as classic, with colour palette Set1, centred title, angled x axis labels

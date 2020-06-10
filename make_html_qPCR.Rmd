@@ -20,63 +20,80 @@ We want to test the efficiency of viral RNA recovery from wastewater by spiking 
 
 ## All data
 
-### Pilot run 
+### Pilot run
 
  Grey points = Technical replicates of RT-qPCR
 ```{r pilot}
 source('general_functions.R')
+errorbar_width = .1
 
-flnm <- 'WW1_Baylor-bovine_test'  # set the filename
-flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
-plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B36:N44')
-
-source('analysis.R') ; res1 <- results_abs_preserved # run pilot samples and capture formatted results
+# flnm <- 'WW1_Baylor-bovine_test'  # set the filename
+# flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
+# plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B36:N44')
+# 
+# source('analysis.R') ; res1 <- results_abs_preserved # run pilot samples and capture formatted results
 ```
 
-### Larger run 
+### Larger run
 
 ```{r large_run}
 
-flnm <- 'WW2_Baylor-bovine'  # set the filename
-flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
-plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B47:N55')
-
-source('analysis.R') ; res2 <- results_abs_preserved # run pilot samples and capture formatted results
-
-compiled_results <- bind_rows(res1, res2) %>% rename('Tube ID' = assay_variable, Cq = CT) %>% separate(`Tube ID`, c('unique_tube', 'biological_replicate'), remove = F) %>% mutate(unique_tube = as.numeric(unique_tube)) %>% arrange(`Sample Name`, unique_tube, biological_replicate) %>% select(`Sample Name`, Target, `Tube ID`, Cq, `Copy #`, everything()) # combine the data from WW1 and WW2; order by sample name and tube ID
-
-# bring the sample names list(s)
-tube_lookup <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=1935582781', sheet = 'RNA extracts', range = 'A1:D83') %>% rename('Tube ID' = `Label on tube`, 'Biobot_ID' = 2, 'Sample Name' = 4) %>% mutate(Metadata = as.character(Metadata), `Tube ID` = as.character(`Tube ID`)) %>% fill(`Sample Name`)
-
-biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'D:F')) %>% rename('Biobot_ID' = `BioBot ID#`) %>% mutate(Biobot_ID = str_remove(Biobot_ID,'\\.'))
-
-labelled_results <- left_join(compiled_results, tube_lookup) %>% left_join(biobot_lookup)
-
-write_sheet(labelled_results,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = 'Baylor 5/12; 5/19') # save results to a google sheet
+# flnm <- 'WW2_Baylor-bovine'  # set the filename
+# flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
+# plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate layouts', range = 'B47:N55')
+# 
+# source('analysis.R') ; res2 <- results_abs_preserved # run pilot samples and capture formatted results
+# 
+# compiled_results <- bind_rows(res1, res2) %>% rename('Tube ID' = assay_variable, Cq = CT) %>% separate(`Tube ID`, c('unique_tube', 'biological_replicate'), remove = F) %>% mutate(unique_tube = as.numeric(unique_tube)) %>% arrange(`Sample Name`, unique_tube, biological_replicate) %>% select(`Sample Name`, Target, `Tube ID`, Cq, `Copy #`, everything()) # combine the data from WW1 and WW2; order by sample name and tube ID
+# 
+# # bring the sample names list(s)
+# tube_lookup <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=1935582781', sheet = 'RNA extracts', range = 'A1:D83') %>% rename('Tube ID' = `Label on tube`, 'Biobot_ID' = 2, 'Sample Name' = 4) %>% mutate(Metadata = as.character(Metadata), `Tube ID` = as.character(`Tube ID`)) %>% fill(`Sample Name`)
+# 
+# biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'D:F')) %>% rename('Biobot_ID' = `BioBot ID#`) %>% mutate(Biobot_ID = str_remove(Biobot_ID,'\\.'))
+# 
+# labelled_results <- left_join(compiled_results, tube_lookup) %>% left_join(biobot_lookup)
+# 
+# write_sheet(labelled_results,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = 'Baylor 5/12; 5/19') # save results to a google sheet
 ```
 
 ### Complete data
 
  Grey points = Biological replicates of wastewater from the same WWTP 
  
+```{r Data_input}
+processed_data_1 <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C2:R119') %>% 
+  separate(`Tube ID`, into = c('Tube ID', 'Biological_replicate')) %>% mutate(`Sample Name` = str_replace(`Sample Name`, 'WW', 'HA')) %>% arrange(Target, `Sample Name`) # merge biological replicates
+
+# # bring the sample names list(s)
+# tube_lookup <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=1935582781', sheet = 'RNA extracts', range = 'A1:D83') %>% rename('Tube ID' = `Label on tube`, 'Biobot_ID' = 2, 'Sample Name' = 4) %>% mutate(Metadata = as.character(Metadata), `Tube ID` = as.character(`Tube ID`)) %>% fill(`Sample Name`)
+
+biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'D:F')) %>% rename('Biobot ID' = `BioBot ID#`, 'Symbol' = SYMBOL) %>% mutate('Biobot ID' = str_remove(`Biobot ID`,'\\.'), Symbol = as.character(Symbol))
+
+proc_data <- left_join(processed_data_1, biobot_lookup, by = 'Biobot ID') %>% mutate(Symbol = if_else(str_detect(Symbol, '^X'), `Tube ID`, Symbol))
+
+write_sheet(proc_data,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = '(Recoveries) Baylor 5/12; 5/19') # save results to a google sheet
+```
+
 ```{r calculations}
-proc_data <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=1386677460', sheet = 'RT-qPCR results', range = 'C2:R119') 
-proc_data %<>% separate(`Tube ID`, into = c('Tube ID', 'Biological_replicate')) %>% mutate(`Sample Name` = str_replace(`Sample Name`, 'WW', 'HA')) %>% arrange(Target, `Sample Name`) # merge biological replicates
-proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`) %>% summarise_at(vars(2:6), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD for biological replicates
 
-tube_order <- proc_summary %>% filter(`Sample Name` == '5/12') %>% arrange(`Copy #_mean`) %>% pull(`Tube ID`) # order samples by 5/12 ascending order
-proc_summary$`Tube ID` %<>%  fct_relevel(levels = tube_order) # order samples by 5/12 ascending order
+proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`, Symbol) %>% summarise_at(vars(2:6), funs(mean(.,na.rm = T), sd)) # Summarize mean and SD for biological replicates
 
-concise_summary <- proc_summary %>% gather(key = 'Measurement', value = 'Reading', -Target, -`Sample Name`, -`Tube ID`) %>% separate(Measurement, into = c('Measurement','val'),"_") %>% spread(val,Reading) # Seperate mean and variance and group by variable of measurement
+Symbol_order <- proc_summary %>% filter(`Sample Name` == '5/12') %>% arrange(`Copy #_mean`) %>% pull(Symbol) # order samples by 5/12 ascending order
+proc_summary$Symbol %<>%  fct_relevel(levels = Symbol_order) # order samples by 5/12 ascending order
 
 
-plt1 <- proc_summary %>% ggplot(aes(x = `Tube ID`, y = `Copy #_mean`, colour = Target)) +
-  geom_point(size = 2) + geom_errorbar(aes(ymin = `Copy #_mean` - `Copy #_sd`, ymax = `Copy #_mean` + `Copy #_sd`, width = errorbar_width)) +
-  geom_jitter(data = proc_data, aes(x = `Tube ID`, y = `Copy #`), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+concise_summary <- proc_summary %>% gather(key = 'Measurement', value = 'Reading', -Target, -`Sample Name`, -`Tube ID`, -Symbol) %>% separate(Measurement, into = c('Measurement','val'),"_") %>% spread(val,Reading) # Seperate mean and variance and group by variable of measurement
+
+
+plt1 <- proc_summary %>% ggplot(aes(x = Symbol, y = `Copy #_mean`, colour = Target)) +
+  geom_point(size = 2) + geom_errorbar(aes(ymin = `Copy #_mean` - `Copy #_sd`, ymax = `Copy #_mean` + `Copy #_sd`, width = .1)) +
+  geom_jitter(data = proc_data, aes(x = Symbol, y = `Copy #`), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/ul RNA')
 
 plt1 %>% format_classic() %>% format_logscale() %>% print()
+
+# plot_mean_sd_jitter(concise_summary, proc_data, 'Copy #', colour_var = 'Target') -> ptst
 ```
 
 
@@ -88,10 +105,10 @@ Small circles are individual data points, coloured large circles show average of
 * grey circles = calculated genome copies recovered (per litre wastewater) 
 
 ```{r comparision_plot}
-plt2 <- proc_summary %>% ggplot(aes(x = `Tube ID`, y = `Recovered_mean`, colour = Target)) +
+plt2 <- proc_summary %>% ggplot(aes(x = Symbol, y = `Recovered_mean`, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = `Recovered_mean` - `Recovered_sd`, ymax = `Recovered_mean` + `Recovered_sd`, width = errorbar_width)) +
-  geom_jitter(data = proc_data, aes(x = `Tube ID`, y = Recovered), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
-  geom_point(data = proc_data, aes(x = `Tube ID`, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
+  geom_jitter(data = proc_data, aes(x = Symbol, y = Recovered), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+  geom_point(data = proc_data, aes(x = Symbol, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/l WW')
 
@@ -107,9 +124,9 @@ plt2 %>% format_classic() %>% format_logscale() %>% print()
 
 ```{r fraction}
 
-plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+plt3 <- concise_summary %>% filter(Measurement == 'Recovery fraction') %>% ggplot(aes(x = Symbol, y = mean, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
-  geom_jitter(data = proc_data, aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  geom_jitter(data = proc_data, aes(x = Symbol, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
 
@@ -129,10 +146,10 @@ Small circles are individual data points, coloured large circles show average of
 ```{r comparision_plot2}
 proc_data_sel <- filter(proc_data, str_detect(`Sample Name`,'5/|HA')) # filter the data to be plotted
 
-plt2s <- proc_summary %>% filter(str_detect(`Sample Name`,'5/|HA')) %>% ggplot(aes(x = `Tube ID`, y = `Recovered_mean`, colour = Target)) +
+plt2s <- proc_summary %>% filter(str_detect(`Sample Name`,'5/|HA')) %>% ggplot(aes(x = Symbol, y = `Recovered_mean`, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = `Recovered_mean` - `Recovered_sd`, ymax = `Recovered_mean` + `Recovered_sd`, width = errorbar_width)) +
-  geom_jitter(data = proc_data_sel, aes(x = `Tube ID`, y = Recovered), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
-  geom_point(data = proc_data_sel, aes(x = `Tube ID`, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
+  geom_jitter(data = proc_data_sel, aes(x = Symbol, y = Recovered), size = 1, colour = 'black', alpha = .2, width = .2 ) + 
+  geom_point(data = proc_data_sel, aes(x = Symbol, y = `Actual spike-in`), size = 1, shape = 21, colour = 'black') +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Genome copies/l WW')
 
@@ -147,9 +164,9 @@ plt2s %>% format_classic() %>% format_logscale() %>% print()
 
 ```{r fraction2}
 
-plt3s <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`,'5/|HA')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+plt3s <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`,'5/|HA')) %>% ggplot(aes(x = Symbol, y = mean, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
-  geom_jitter(data = proc_data_sel, aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  geom_jitter(data = proc_data_sel, aes(x = Symbol, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
 
@@ -164,7 +181,7 @@ plt3s %>% format_classic() %>% print()
 
 ```{r PEG,CF}
 
-plt4 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/12')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+plt4 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/12')) %>% ggplot(aes(x = Symbol, y = mean, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
@@ -180,9 +197,9 @@ plt4 %>% format_classic() %>% print()
 
 ```{r 12,19}
 
-plt5 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/1.$')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+plt5 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/1.$')) %>% ggplot(aes(x = Symbol, y = mean, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
-  geom_jitter(data = filter(proc_data,  str_detect(`Sample Name`, '5/1.$')), aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  geom_jitter(data = filter(proc_data,  str_detect(`Sample Name`, '5/1.$')), aes(x = Symbol, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
 
@@ -195,9 +212,9 @@ plt5 %>% format_classic() %>% print()
 
 ```{r 5/19}
 
-plt6 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/19')) %>% ggplot(aes(x = `Tube ID`, y = mean, colour = Target)) +
+plt6 <- concise_summary %>% filter(Measurement == 'Recovery fraction', str_detect(`Sample Name`, '5/19')) %>% ggplot(aes(x = Symbol, y = mean, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, width = errorbar_width)) +
-  geom_jitter(data = filter(proc_data,  str_detect(`Sample Name`, '5/19')), aes(x = `Tube ID`, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
+  geom_jitter(data = filter(proc_data,  str_detect(`Sample Name`, '5/19')), aes(x = Symbol, y = `Recovery fraction`), size = 1, colour = 'black', alpha = .2, width = .2 ) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification') + ylab('Recovery %')
 
@@ -221,10 +238,11 @@ plt3 %>% format_classic() %>% ggplotly()
 
 ```{r biological_variability}
 
-plt7 <- concise_summary %>% mutate(variation = (sd/mean)* 100) %>% filter(`Sample Name` == '5/19', Measurement == 'Recovered') %>% ggplot(aes(x = `Tube ID`, y = variation)) +
+plt7 <- concise_summary %>% mutate(variation = (sd/mean)* 100) %>% filter(`Sample Name` == '5/19', Measurement == 'Recovered') %>% ggplot(aes(x = Symbol, y = variation)) +
   geom_point(size = 2) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') +
   ggtitle('Baylor-Spike-in vaccine quantification', subtitle = 'High variability among biological replicates') + ylab('% variability (sd/mean) Recovered copies/l ww')
 
 plt7 %>% format_classic() %>% print()
 ```
+
