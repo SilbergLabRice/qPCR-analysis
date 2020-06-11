@@ -12,26 +12,22 @@ flnm <- 'WW6-601 HA_recovery'  # set the filename
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
 plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate import setup', range = 'G1:S9')
 
-title_name <-'6/1_Recoveries'
-experiment_mode <- 'assay' # options ('small_scale' ; 'assay') ; future implementation: 'custom'. Explanation below
-  # 'assay' =  Plots for Assays (facetted by Sample category = control vs experiment ; naming: 'Sample Name'_variable primer pair)
-  # 'small_scale' = plots for troubleshooting expts : faceted by primer pair and sample name = template
-plot_select_template <- '' # Options ('' or 'something') ; filters a particular template name to plot 
+title_name <-'6/1_Recovery'
+
 errorbar_width = 0.1; # width of errorbars - emperically change
 
+# Spike in and concentration details
+HA_concentration_factor <- 500 # concentration factor of wastewater -> RNA
+spike_virus_conc <- 1124 # copies/ul viral suspension spiked in
+spike_virus_volume <- 50 # ul of viral suspenses spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
+
+
 # Assay mode features (choose if you want absolute quantification)
-plot_assay_variable <- 'Sample' # printed on the x axis of the graph
-plot_colour_by <- quo(Target) # Options : (quo(Target) or quo(Sample Name); Determines which variable is chosen for plotting in different colours
-plot_mode <-  'absolute_quantification'  # Options : ('absolute_quantification' or ''); absolute_quantification will calculate copy #'s based on intercept and slope from standard curve - manually entered below ; else, Cq values are plotted
 std_par <- tibble(                       # Input the slope and intercept from standard curve of various primer pairs/targets here - Target should match Target field (provided in excel sheet - Sample input reference.csv) 
   target = c('BRSV_N', 'BCoV_M', 'N1_CoV2', 'N2_CoV2'),
   slope =  c(-3.62, -3.49, -3, -3.12),
   intercept = c(39, 39, 39, 40) # values for various targets
 )
-plot_normalized_backbone <- 'no' # Options: ('yes' or 'no'); plots copy #'s normalized to backbone 
-plot_mean_and_sd <- 'yes' # Options: ('yes' or 'no'); plots mean and errorbars instead of each replicate as a point: Only in absolute_quantification mode
-plot_exclude_category <- '^none' # Regex pattern: 'Controls2', '^MHT*', '^none; exclude categories for plotting; ex: Controls etc.: filters based on `Sample Name`: works only in assay mode
-plot_exclude_assay_variable <- '^none' # Regex pattern: '^N', '^none' or ''; exclude assay_variables for plotting; ex: no template control etc.: filters based on assay_variable: works only in assay mode
 
 # Input the data ----
 
@@ -47,47 +43,59 @@ results_relevant$Target %<>% str_replace('BSRV', 'BRSV') # correcting mis-spelle
 
 rm(fl, plate_template_raw)  # remove old data for sparsity
 
-# Plots for Assays ----
+# Data cleaning ----
 # (facetted by Sample category; naming: 'Sample Name'_variable primer pair)
 
 # Separate the sample name into columns and make factors in the right order for plotting (same order as the plate setup)
 
 # isolate the primer pair and assay_variable into 3 columns : Sample name, assay variable and primer pair 
-results_relevant %<>% separate(`Sample Name`,c(NA, 'Sample Name'),'-') %>% separate(`Sample Name`,c('Sample Name','Tube ID'),'_') %>% mutate(`Tube ID` = if_else(`Sample Name` == 'NTC', '0', `Tube ID`))
-
-results_relevant %<>% separate(`Tube ID`, c('assay_variable', 'biological_replicates'), remove = F)
-
-# Factorise the sample name in the order for plotting
-results_relevant %<>% mutate_if(is.character,as_factor) 
-
-# re-arrange the results in same order as the above factors (columnwise order of the plate)
-results_relevant %<>% arrange(`Well Position`) 
-
-# select samples to plot (or to exclude write a similar command)
-results_relevant %<>% filter(str_detect(`Sample Name`, paste('^', plot_select_template, sep = ''))) # str_detect will find for regular expression; ^x => starting with x
-
-results_relevant %<>% filter(!str_detect(`Sample Name`, plot_exclude_category)) # exclude unwanted samples categories (sample_name) 
-results_relevant %<>% filter(!str_detect(assay_variable, plot_exclude_assay_variable)) # excluding unwanted samples from assay_variable
-
+results_relevant %<>% separate(`Sample Name`,c(NA, 'Sample Name'),'-') %>% 
+  separate(`Sample Name`,c('Sample Name','Tube ID'),'_') %>% 
+  mutate(`Tube ID` = if_else(`Sample Name` == 'NTC', '0', `Tube ID`)) %>% 
+  separate(`Tube ID`, c('assay_variable', 'biological_replicates'), remove = F) %>%  # seperating biological replicates 1.1, 1.2, 1.3
+  arrange(`Well Position`) # re-arrange the results in same order as the above factors (columnwise order of the plate)
 
 # Computing copy number from standard curve linear fit information
-results_abs <- results_relevant %>% group_by(Target)  %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
+results_abs <- results_relevant %>% group_by(Target)  %>% do(., absolute_backcalc(., std_par)) %>%  # iteratively calculates copy #'s from standard curve parameters of each Target
+  unite('Biobot_ID', c('Sample Name', 'Tube ID'), sep = "", remove = F)
 
-if(plot_mean_and_sd == 'yes') {
-  y_variable = quo(mean)
-  concise_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd(., na.rm = T))) # find mean and SD of individual copy #s for each replicate
-  data_to_plot <- concise_results_abs
+# WWTP identifiers ----
+# Get ID to WWTP list from google sheet
+biobot_lookup <- map_df(c('Week 8 (6/1)') , ~ read_sheet('https://docs.google.com/spreadsheets/d/1ghb_GjTS4yMFbzb65NskAlm-2Gb5M4SNYi4FHE4YVyI/edit#gid=233791008', sheet = .x, range = 'F:I')) %>% 
+  rename('Biobot_ID' = Comments) %>% 
+  mutate(Biobot_ID = str_remove(Biobot_ID,'\\.'), WWTP = as.character(SYMBOL), SYMBOL = NULL) %>% 
+  select(1,3,4)
+
+results_abs %<>% left_join(biobot_lookup, by = 'Biobot_ID') %>%  # join the results with the WWTP identifiers and names
+  mutate(WWTP = if_else(is.na(WWTP), assay_variable, WWTP)) %>% 
+  mutate(Biobot_ID = if_else(str_detect(`Sample Name`, '457A'), '457A', Biobot_ID)) # accounting for 1 set of samples from another week
+
+# Recovery calculations ----
+
+volumes_data <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=521099478', sheet = 'Concentrated samples', range = 'A1:D38') %>% 
+  rename('WW_vol' = `Total WW vol (ml)`, 'Biobot_ID' = `Biobot/other ID`) %>% 
+  select(WW_vol, Biobot_ID) %>% 
+  fill(WW_vol) %>% distinct() %>% 
+  mutate(Biobot_ID = str_remove(Biobot_ID, " "))
   
-  } else {y_variable = quo(`Copy #`); data_to_plot <- results_abs}
+results_abs %<>% left_join(volumes_data, by = 'Biobot_ID') %>%   # join the results with the WWTP identifiers and names
+  mutate(`Actual spike-in` = spike_virus_conc * spike_virus_volume / (WW_vol * 1e-3), Recovered = `Copy #` * 1e6/HA_concentration_factor, `Recovery fraction` = 100 * Recovered/`Actual spike-in`)
 
-plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
 
-if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
-  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`, colour = Target), size = 1, alpha = .2, width = .2) } # plot raw data
 
+# Plotting ----
+
+
+summary_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable, WWTP) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd(., na.rm = T))) # find mean and SD of individual copy #s for each replicate
+  
+plt <- summary_results_abs %>% ggplot(aes(x = WWTP, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
+
+plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
+  geom_jitter(data = results_abs, aes(x = WWTP, y = `Copy #`, colour = Target), size = 1, alpha = .2, width = .2) + # plot raw data
+  geom_point(size = 2) +
+  facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
 
 # Formatting plot
-plt <- plt + geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
 plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
 
 print(plt.formatted)
