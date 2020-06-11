@@ -71,7 +71,7 @@ biobot_lookup <- map_df(c('Week 5 (5/11)', 'Week 6 (5/18)') , ~ read_sheet('http
 
 proc_data <- left_join(processed_data_1, biobot_lookup, by = 'Biobot ID') %>% mutate(Symbol = if_else(str_detect(Symbol, '^X'), `Tube ID`, Symbol))
 
-write_sheet(proc_data,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = '(Recoveries) Baylor 5/12; 5/19') # save results to a google sheet
+# write_sheet(proc_data,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = '(Recoveries) Baylor 5/12; 5/19') # save results to a google sheet
 ```
 
 ```{r calculations}
@@ -81,9 +81,9 @@ proc_summary <- proc_data  %>% group_by(Target, `Sample Name`, `Tube ID`, Symbol
 Symbol_order <- proc_summary %>% filter(`Sample Name` == '5/12') %>% arrange(`Copy #_mean`) %>% pull(Symbol) # order samples by 5/12 ascending order
 proc_summary$Symbol %<>%  fct_relevel(levels = Symbol_order) # order samples by 5/12 ascending order
 
-
 concise_summary <- proc_summary %>% gather(key = 'Measurement', value = 'Reading', -Target, -`Sample Name`, -`Tube ID`, -Symbol) %>% separate(Measurement, into = c('Measurement','val'),"_") %>% spread(val,Reading) # Seperate mean and variance and group by variable of measurement
 
+concise_raw <- proc_data %>% select(1:3,5:9,18,19) %>% gather(key = 'Measurement', value = 'val', -Target, -`Sample Name`, -`Tube ID`, -Symbol, -`FACILITY NAME`) # Seperate mean and variance and group by variable of measurement
 
 plt1 <- proc_summary %>% ggplot(aes(x = Symbol, y = `Copy #_mean`, colour = Target)) +
   geom_point(size = 2) + geom_errorbar(aes(ymin = `Copy #_mean` - `Copy #_sd`, ymax = `Copy #_mean` + `Copy #_sd`, width = .1)) +
@@ -93,7 +93,7 @@ plt1 <- proc_summary %>% ggplot(aes(x = Symbol, y = `Copy #_mean`, colour = Targ
 
 plt1 %>% format_classic() %>% format_logscale() %>% print()
 
-# plot_mean_sd_jitter(concise_summary, proc_data, 'Copy #', colour_var = 'Target') -> ptst
+# plot_mean_sd_jitter(concise_summary, concise_raw, 'Copy #', colour_var = Target) -> ptst
 ```
 
 
