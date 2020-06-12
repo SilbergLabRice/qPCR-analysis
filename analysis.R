@@ -81,14 +81,13 @@ volumes_data <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuB
 results_abs %<>% left_join(volumes_data, by = 'Biobot_ID') %>%   # join the results with the WWTP identifiers and names
   mutate(`Actual spike-in` = spike_virus_conc * spike_virus_volume / (WW_vol * 1e-3), Recovered = `Copy #` * 1e6/HA_concentration_factor, `Recovery fraction` = 100 * Recovered/`Actual spike-in`)
 
-
-
 # Plotting ----
 
 
 summary_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable, WWTP) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd(., na.rm = T))) # find mean and SD of individual copy #s for each replicate
-  
-plt <- summary_results_abs %>% ggplot(aes(x = WWTP, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
+results_abs %<>% replace_na(replace = list('Copy #' = 0, Recovered = 0)) # Make unamplified values zero: for plotting - not counted in the mean calculations
+
+plt <- summary_results_abs %>% ggplot(aes(x = WWTP, y = mean, color = Target)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
 
 plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
   geom_jitter(data = results_abs, aes(x = WWTP, y = `Copy #`, colour = Target), size = 1, alpha = .2, width = .2) + # plot raw data
@@ -96,9 +95,9 @@ plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorb
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
 
 # Formatting plot
-plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
+plt.formatted <- plt %>% format_classic(., title_name, 'WWTP or Sample name') %>% format_logscale() # formatting plot, axes labels, title and logcale plotting
 
 print(plt.formatted)
 
-# write_sheet(results_abs,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = flnm) # save results to a google sheet
+write_sheet(results_abs,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = title_name) # save results to a google sheet
 # ggsave('qPCR analysis/WW1_Baylor-bovine_pilot.png', plot = plt.formatted, width = 5, height = 4)

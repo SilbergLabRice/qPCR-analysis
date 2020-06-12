@@ -18,12 +18,22 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 8, fig.hei
 
 Quantifying recovery of spiked bovine CoV vaccine and comparison between variants of HA filtration method
 
-## Running source codes
+## Plots
+### Raw copy #
 
 ```{r sourcing}
 source('general_functions.R')
 source('analysis.R')
 ```
+
+### Recovery vs expected
+
+```{r reco}
+concise_summary <- summary_results_abs %>% select(-assay_variable) %>% gather(key = 'Measurement', value = 'Reading', -Target, -`Sample Name`, -WWTP) # get data into long for
+concise_raw <- results_abs %>% select(3:4,7:11,13:15) %>% gather(key = 'Measurement', value = 'val', -Target, -`Sample Name`, -`Tube ID`, -WWTP, -`FACILITY NAME`) # Seperate mean and variance and group by variable of measurement
+
+```
+
 
 ## Data output
 
