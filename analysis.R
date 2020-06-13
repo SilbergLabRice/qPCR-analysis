@@ -8,7 +8,7 @@ source('./general_functions.R') # Source the general_functions file before runni
 # User inputs ----
 # choose file name, title for plots and experiment mode (file name starts in the same directory as Rproject) 
 
-flnm <- 'WW3_Baylor-N1-N2'  # set the filename
+flnm <- 'WW10_Conc testing_N1 N2 BCoV'  # set the filename
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path
 plate_template_raw <- read_sheet('https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118', sheet = 'Plate import setup', range = 'G1:S9')
 
@@ -95,4 +95,5 @@ plt.formatted <- plt %>% format_classic(., title_name, plot_assay_variable) %>% 
 
 print(plt.formatted)
 
+# write_sheet(results_abs,'https://docs.google.com/spreadsheets/d/1ouk-kCJHERRhOMNP07lXfiC3aGB4wtWXpnYf5-b2CI4/edit#gid=0', sheet = title_name) # save results to a google sheet
 # ggsave('qPCR analysis/WW1_Baylor-bovine_pilot.png', plot = plt.formatted, width = 5, height = 4)

@@ -1,7 +1,7 @@
 ---
-title: "WW3_Baylor N1,N2 pilot"
+title: "WW10_Conc testing_N1 N2 BCoV"
 author: "Prashant Kalvapalle"
-date: "8 June 2020"
+date: "13 June 2020"
 output: 
   html_document:
     theme: flatly
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 8, fig.hei
 
 ## Goal of the analysis
 
-Quantifying CoV2-N1,N2 in a few samples from 5/12 and 5/19. 
+Quantifying CoV2-N1,N2 in samples processed after variable spike in steps
 
 ## Running source codes
 
