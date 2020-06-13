@@ -57,7 +57,7 @@ results_relevant %<>% separate(`Sample Name`,c(NA, 'Sample Name'),'-') %>%
 
 # Computing copy number from standard curve linear fit information
 results_abs <- results_relevant %>% group_by(Target)  %>% do(., absolute_backcalc(., std_par)) %>%  # iteratively calculates copy #'s from standard curve parameters of each Target
-  unite('Biobot_ID', c('Sample Name', 'Tube ID'), sep = "", remove = F)
+  unite('Biobot_ID', c('Sample Name', 'assay_variable'), sep = "", remove = F)
 
 # WWTP identifiers ----
 # Get ID to WWTP list from google sheet
@@ -87,7 +87,7 @@ results_abs %<>% replace_na(replace = list('Copy #' = 0, Recovered = 0)) # Make 
 plt <- summary_results_abs %>% ggplot(aes(x = WWTP, y = mean, color = Target)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
 
 plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
-  geom_jitter(data = results_abs, aes(x = WWTP, y = `Copy #`, colour = Target), size = 1, width = .2) + # plot raw data
+  geom_jitter(data = results_abs, aes(x = WWTP, y = `Copy #`, colour = Target, alpha = map_dbl(`Copy #`, ~if_else(. == 0, 1, .4))), size = 1, width = .2, show.legend = F) + # plot raw data
   geom_point(size = 2) +
   facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') # plot points and facetting
 
