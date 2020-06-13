@@ -75,17 +75,13 @@ results_relevant %<>% filter(!str_detect(assay_variable, plot_exclude_assay_vari
 # Computing copy number from standard curve linear fit information
 results_abs <- results_relevant %>% group_by(Target) %>% do(., absolute_backcalc(., std_par)) # iteratively calculates copy #'s from standard curve parameters of each Target
 
-if(plot_mean_and_sd == 'yes') {
-  y_variable = quo(mean)
-  concise_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # find mean and SD of individual copy #s for each replicate
-  data_to_plot <- concise_results_abs
-  
-  } else {y_variable = quo(`Copy #`); data_to_plot <- results_abs}
+y_variable = quo(mean)
+concise_results_abs <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # find mean and SD of individual copy #s for each replicate
+results_abs %<>% mutate(`Copy #` = if_else(is.na(`Copy #`), 0, `Copy #`)) # make unamplified values zero - does not count in the average calculattions
 
-plt <- data_to_plot %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract')    # Specify the plotting variables 
-
-if(plot_mean_and_sd == 'yes') {plt <- plt + geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
-  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`, colour = Target), size = 1, alpha = .2, width = .2) } # plot raw data
+plt <- concise_results_abs %>% ggplot(aes(x = `assay_variable`, y = !!y_variable, color = !!plot_colour_by)) + ylab('Copies/ul RNA extract') +   # Specify the plotting variables 
+  geom_errorbar(aes(ymin = mean -sd, ymax = mean + sd, width = errorbar_width)) + # plot errorbars if mean and SD are desired
+  geom_jitter(data = results_abs, aes(x = `assay_variable`, y = `Copy #`, colour = Target, alpha = map_dbl(`Copy #`, ~ if_else(.x == 0, 1, .2)) ), size = 1, width = .2, show.legend = F) # plot raw data
 
 
 # Formatting plot
