@@ -24,7 +24,8 @@ sample_order = columnwise_index(fl) # this gives a vector to order the samples c
 # Load desired qPCR result sheet and columns
 bring_results <- fl$Results %>% select(`Well Position`, `Sample Name`, CT, starts_with('Tm'),`Target Name`) %>% rename(Target = `Target Name`) %>%  .[sample_order,] %>%  # select only the results used for plotting, calculations etc. and arrange them according to sample order
  select(-`Sample Name`) %>% right_join(plate_template, by = 'Well Position') %>%  # Incorporate samples names from the google sheet by matching well position
-  filter(!is.na(Target))
+  filter(!is.na(Target)) %>% 
+  mutate('Template Volume' = if_else(str_detect(`Well Position`, '9|10|11'), '4 ul', '10 ul'))
    
 # Remove unneccesary data
 rm(fl, plate_template_raw)  # remove old data for sparsity
@@ -58,8 +59,9 @@ results_abs <- results_relevant %>% group_by(Target) %>% do(., absolute_backcalc
 summary_results <- results_abs %>%  group_by(`Sample Name`, Target, assay_variable) %>% summarise_at(vars(`Copy #`), funs(mean(.,na.rm = T), sd)) # find mean and SD of individual copy #s for each replicate
 results_abs$`Copy #` %<>% replace_na(0) # make unamplified values 0 for plotting
 
-plt <- results_abs %>% ggplot(aes(x = `Tube ID`, y = `Copy #`, color = Target)) + ylab('Copies/ul RNA extract') +    # Specify the plotting variables 
+plt <- results_abs %>% ggplot(aes(x = `Tube ID`, y = `Copy #`, color = Target, shape = `Template Volume` )) + ylab('Copies/ul RNA extract') +    # Specify the plotting variables 
   geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') + # plot points and facetting
+  scale_shape_manual(values = c(6, 16))
   ggtitle(title_name) + xlab(plot_assay_variable)
 plt.formatted <- plt %>% format_classic(.) %>% format_logscale_y() # formatting plot, axes labels, title and logcale plotting
 
