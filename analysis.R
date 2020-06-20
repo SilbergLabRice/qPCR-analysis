@@ -60,8 +60,8 @@ summary_results <- results_abs %>%  group_by(`Sample Name`, Target, assay_variab
 results_abs$`Copy #` %<>% replace_na(0) # make unamplified values 0 for plotting
 
 plt <- results_abs %>% ggplot(aes(x = `Tube ID`, y = `Copy #`, color = Target, shape = `Template Volume` )) + ylab('Copies/ul RNA extract') +    # Specify the plotting variables 
-  geom_point(size = 2) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') + # plot points and facetting
-  scale_shape_manual(values = c(6, 16))
+  geom_point(size = 2, stroke = 1.5) + facet_grid(~`Sample Name`, scales = 'free_x', space = 'free_x') + # plot points and facetting
+  scale_shape_manual(values = c(1, 16))+
   ggtitle(title_name) + xlab(plot_assay_variable)
 plt.formatted <- plt %>% format_classic(.) %>% format_logscale_y() # formatting plot, axes labels, title and logcale plotting
 
