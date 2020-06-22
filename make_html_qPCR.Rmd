@@ -32,6 +32,8 @@ bb_sheets <- c('Week 10 (6/15)')
 
 # Extra categories for plotting separately (separate by | like this 'Vaccine|Troubleshooting')
 extra_categories = 'TR'
+translate_id_manual <- c('Water/Field', 'Water/Lab', 'WW/Field', 'WW/Lab', 'Solids/Present', 'Solids/Removed') %>% rep(each = 3) %>% setNames(str_c('^', 1:18)) %>% rev()
+
 ```
 
 ## Goal of the analysis
@@ -114,8 +116,12 @@ vol_qpcr <- bb_qpcr %>% left_join(volumes_data, by = 'Label_tube') %>%
 ```
 
 
-```{r summarizing_plot}
-spike_qpcr <- vol_qpcr %>% filter(str_detect(Target, 'BCoV|BRSV'), !str_detect(assay_variable, '11|9')) %>% select(-c(3,4,6,7,8))
+```{r summarizing_plot, fig.width=8}
+spike_qpcr <- vol_qpcr %>% filter(str_detect(Target, 'BCoV|BRSV')) %>% select(-c(3,4,6,7,8)) %>% 
+  mutate_at(c('WWTP', 'FACILITY NAME'), ~str_replace_all(., translate_id_manual)) %>% 
+  separate(WWTP, c('WWTP', 'tmp')) %>% 
+  mutate_cond(`Sample Name` == 'TR', 'Sample Name' = WWTP, 'WWTP' = tmp) %>% 
+  select(-tmp)
 
 vol_qpcr_summary <- spike_qpcr %>% select(-WW_vol) %>% group_by(Target, `Sample Name`, `FACILITY NAME`, WWTP) %>% summarise_at(vars(2,3:5), funs(mean(.,na.rm = T), sd(.,na.rm = T))) # Summarize mean and SD for biological replicates
 
@@ -128,7 +134,7 @@ long_vol_qpcr_summary <- vol_qpcr_summary %>% gather(key = 'Measurement', value 
 long_vol_qpcr_raw <- spike_qpcr %>% gather(key = 'Measurement', value = 'val', -Target, -`Sample Name`, -WWTP, -`FACILITY NAME`) # Seperate mean and variance and group by variable of measurement
 
 # plot recovery and spiked in
-reco_plot <- plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, long_format = T, measure_var = 'Recovered', sample_var = extra_categories, exclude_sample = T, x_var = WWTP, ylabel = 'Genome copies/l Wastewater') + geom_point(data = filter(long_vol_qpcr_summary, str_detect(Measurement,'Actual')), colour = 'black', shape = 21) + geom_line(data = filter(long_vol_qpcr_summary, str_detect(Measurement,'Actual')), colour = 'black')
+reco_plot <- plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = 'Vaccine', exclude_sample = T, long_format = T, measure_var = 'Recovered', x_var = WWTP, ylabel = 'Genome copies/l Wastewater') + geom_point(data = filter(long_vol_qpcr_summary, str_detect(Measurement,'Actual'), !str_detect(`Sample Name`, 'Vaccine')), colour = 'black', shape = 21)
 
 reco_plot %>%  format_logscale_y() %>% print()
 ```
@@ -137,7 +143,7 @@ reco_plot %>%  format_logscale_y() %>% print()
 
 ```{r percentreco}
 
-plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = extra_categories, exclude_sample = T, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
+plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
 ```
 
 ## Special categories
