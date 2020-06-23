@@ -20,7 +20,7 @@ source('./inputs_for_analysis.R') # Source the file with user inputs
 
 # Spike in and concentration details
 HA_concentration_factor <- 1000 # concentration factor of wastewater -> RNA
-spike_virus_conc <- 22123 # copies/ul viral suspension spiked in (Spike ID: S12)
+spike_virus_conc <- (22123) * 5/4 # copies/ul viral suspension spiked in (Spike ID: S12; correction included)
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
 # sheets to read from qPCR data dump excel file
@@ -141,9 +141,9 @@ reco_plot %>%  format_logscale_y() %>% print()
 
 ### % recovery
 
-```{r percentreco}
+```{r percentreco, fig.width = 8}
 
-plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
+plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, long_format = T, sample_var = 'Vaccine', exclude_sample = T, measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
 ```
 
 ## Special categories
