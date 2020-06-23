@@ -1,0 +1,71 @@
+---
+title: "608 615 N1N2"
+author: "Prashant Kalvapalle"
+date: "22 June 2020"
+output: 
+  html_document:
+    theme: flatly
+    toc: TRUE
+    toc_float: TRUE
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 12, fig.height = 4)
+
+# Loading libraries, functions and user inputs
+source('./general_functions.R') # Source the general_functions file
+
+read_these_sheets <- c('6/8 Rice', '6/15 Rice')
+title_name <- '6/8 vs 6/15 Rice'
+
+exclude_categories = 'TR'
+
+```
+
+## Goal of the analysis
+
+Compare between weeks
+
+## Comparision
+
+
+```{r Datainput}
+rawqpcr <- map_dfr(read_these_sheets, ~ read_sheet('https://docs.google.com/spreadsheets/d/1ltvW7xZf2aUPoBchD4NFGuV0gGWPkdsOW3a0Hxalm-Y/edit#gid=2136526998', sheet = .x, range = 'A:H') %>% mutate('week' = .x)) 
+
+bb_qpcr <- rawqpcr %>% filter(!str_detect(`WWTP`, exclude_categories)) # remove Baylor samples (5/26 nad 6/2) - processed separately
+
+vol_qpcr_summary <- spike_qpcr %>% select(-WW_vol) %>% group_by(Target, `Sample Name`, `FACILITY NAME`, WWTP, week) %>% summarise_at(vars(2,3:5), funs(mean(.,na.rm = T), sd(.,na.rm = T))) # Summarize mean and SD for biological replicates
+
+WWTP_order <- vol_qpcr_summary %>% filter(`Sample Name` == '608', str_detect(Target,'BCoV')) %>% arrange(`Copy #_mean`) %>% pull(WWTP) # order samples by 5/12 ascending order
+
+vol_qpcr_summary$WWTP %<>%  fct_relevel(levels = WWTP_order) # order samples by 5/12 ascending order
+
+long_vol_qpcr_summary <- vol_qpcr_summary %>% gather(key = 'Measurement', value = 'Reading', -Target, -`Sample Name`, -`FACILITY NAME`, -WWTP) %>% separate(Measurement, into = c('Measurement','val'),"_") %>% spread(val,Reading) # Seperate mean and variance and group by variable of measurement
+
+long_vol_qpcr_raw <- spike_qpcr %>% gather(key = 'Measurement', value = 'val', -Target, -`Sample Name`, -WWTP, -`FACILITY NAME`) # Seperate mean and variance and group by variable of measurement
+
+# # plot recovery and spiked in
+# reco_plot <- plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = 'Vaccine', exclude_sample = T, long_format = T, measure_var = 'Recovered', x_var = WWTP, ylabel = 'Genome copies/l Wastewater') + geom_point(data = filter(long_vol_qpcr_summary, str_detect(Measurement,'Actual'), !str_detect(`Sample Name`, 'Vaccine')), colour = 'black', shape = 21)
+# 
+# reco_plot %>%  format_logscale_y() %>% print()
+
+summary_bb_qpcr %>% filter(str_detect(Measurement, 'Recovery')) %>% ggplot(aes(x = WWTP, y = mean, fill = week))
+
+# plot_mean_sd_jitter(summary_bb_qpcr, bb_qpcr, sample_var = extra_categories, exclude_sample = T, x_var = WWTP) %>% format_logscale_y() %>% print()
+```
+
+```{r plot1}
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
