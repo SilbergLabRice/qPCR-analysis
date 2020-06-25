@@ -1,7 +1,7 @@
 ---
-title: "WW17_615 N1N2"
+title: "WW19_615 BCoV"
 author: "Prashant Kalvapalle"
-date: "21 June 2020"
+date: "25 June 2020"
 output: 
   html_document:
     theme: flatly
@@ -24,7 +24,7 @@ spike_virus_conc <- (22123) * 5/4 # copies/ul viral suspension spiked in (Spike 
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
 # sheets to read from qPCR data dump excel file
-read_these_sheets <- c('WW17-615_N1-N2')
+read_these_sheets <- c('WW17-615_N1-N2', 'WW19_615_BCov')
 title_name <- '6/15 Rice'
 
 # Biobot ID sheet
@@ -32,7 +32,7 @@ bb_sheets <- c('Week 10 (6/15)')
 
 # Extra categories for plotting separately (separate by | like this 'Vaccine|Troubleshooting')
 extra_categories = 'TR'
-translate_id_manual <- c('Water/Field', 'Water/Lab', 'WW/Field', 'WW/Lab', 'Solids/Present', 'Solids/Removed') %>% rep(each = 3) %>% setNames(str_c('^', 1:18)) %>% rev()
+target_order <- c('BCoV', 'N1_multiplex', 'N2_multiplex')
 
 ```
 
@@ -116,12 +116,8 @@ vol_qpcr <- bb_qpcr %>% left_join(volumes_data, by = 'Label_tube') %>%
 ```
 
 
-```{r summarizing_plot, fig.width=8}
-spike_qpcr <- vol_qpcr %>% filter(str_detect(Target, 'BCoV|BRSV')) %>% select(-c(3,4,6,7,8)) %>% 
-  mutate_at(c('WWTP', 'FACILITY NAME'), ~str_replace_all(., translate_id_manual)) %>% 
-  separate(WWTP, c('WWTP', 'tmp')) %>% 
-  mutate_cond(`Sample Name` == 'TR', 'Sample Name' = WWTP, 'WWTP' = tmp) %>% 
-  select(-tmp)
+```{r summarizing_plot}
+spike_qpcr <- vol_qpcr %>% filter(str_detect(Target, 'BCoV|BRSV')) %>% select(-c(3,4,6,7,8)) 
 
 vol_qpcr_summary <- spike_qpcr %>% select(-WW_vol) %>% group_by(Target, `Sample Name`, `FACILITY NAME`, WWTP) %>% summarise_at(vars(2,3:5), funs(mean(.,na.rm = T), sd(.,na.rm = T))) # Summarize mean and SD for biological replicates
 
@@ -141,7 +137,7 @@ reco_plot %>%  format_logscale_y() %>% print()
 
 ### % recovery
 
-```{r percentreco, fig.width = 8}
+```{r percentreco}
 
 plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, long_format = T, sample_var = 'Vaccine', exclude_sample = T, measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
 ```
@@ -160,7 +156,7 @@ presentable_vol_qpcr <- vol_qpcr %>% rename('Facility' = `FACILITY NAME`) %>%
   mutate_at('Sample Name', ~as.character(.)) %>% 
   mutate_at('Facility', ~if_else(. == assay_variable, str_c(`Sample Name`, '/', assay_variable), .)) %>% 
   mutate_at('Facility', ~str_replace(., '609', 'Extraction blank')) %>% 
-  arrange(Facility, biological_replicates) %>% 
+  arrange(Facility, biological_replicates, Target) %>% 
   unite('Facility', c(Facility, biological_replicates), sep = "-", na.rm = T) %>% 
   filter(!str_detect(assay_variable, '11|9')) %>% 
   mutate_cond(str_detect(Target, 'N'), `Recovery fraction` = NA, `Actual spike-in` = NA) %>% 
