@@ -1,5 +1,5 @@
 ---
-title: "WW21_601 redo + TR2"
+title: "WW22_622_BCoV"
 author: "Prashant Kalvapalle"
 date: "27 June 2020"
 output: 
@@ -19,12 +19,12 @@ source('./inputs_for_analysis.R') # Source the file with user inputs
 
 
 # Spike in and concentration details
-HA_concentration_factor <- 500 # concentration factor of wastewater -> RNA
-spike_virus_conc <- 5495.44 # copies/ul viral suspension spiked in (Spike ID: S12)
+HA_concentration_factor <- 1000 # concentration factor of wastewater -> RNA
+spike_virus_conc <- 14245.6 # copies/ul viral suspension spiked in (Spike ID: S12)
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
 # sheets to read from qPCR data dump excel file
-read_these_sheets <- c('WW21_TR2 622') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
+read_these_sheets <- c('WW22_622_BCoV') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
 title_name <- '622 TR2_a' # name of the filename for writing presentable data and plot title
 
 # Biobot ID sheet to draw sample names from
