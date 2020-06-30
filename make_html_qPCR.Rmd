@@ -24,8 +24,8 @@ spike_virus_conc <- 5495.44 # copies/ul viral suspension spiked in (Spike ID: S1
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
 # sheets to read from qPCR data dump excel file
-read_these_sheets <- c('WW21_TR2 622') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
-title_name <- '622 TR2_a' # name of the filename for writing presentable data and plot title
+read_these_sheets <- c('WW21_601 redo') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
+title_name <- '601 extra Rice' # name of the filename for writing presentable data and plot title
 
 # Biobot ID sheet to draw sample names from
 bb_sheets <- c('Week 8 (6/1)')
@@ -105,8 +105,9 @@ open circles : Viral copies spiked in
 ```{r Recovery_calculations}
 
 # Get volumes data from google sheet : "Sample registry"
-volumes_data <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=521099478', sheet = 'Concentrated samples', range = 'A:D') %>% 
+volumes_data <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=521099478', sheet = 'Concentrated samples', range = 'A:F') %>% 
   rename('WW_vol' = `Total WW vol measured (ml)`, 'Label_tube' = `Label on tube`) %>% 
+    mutate('WW_vol' = coalesce(WW_vol, `Total WW volume calculated (ml)`) ) %>% 
   select(WW_vol, Label_tube) %>% 
   fill(WW_vol) %>% distinct() %>% 
   mutate_at('Label_tube', ~str_remove_all(., " "))
@@ -164,13 +165,13 @@ plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = extra
 presentable_vol_qpcr <- vol_qpcr %>% rename('Facility' = `FACILITY NAME`) %>% 
   mutate_at('Sample Name', ~as.character(.)) %>% 
   mutate_at('Facility', ~if_else(. == assay_variable, str_c(`Sample Name`, '/', assay_variable), .)) %>% 
-  mutate_at('Facility', ~str_replace(., '609', 'Extraction blank')) %>% 
   arrange(Facility, biological_replicates) %>% 
-  unite('Facility', c(Facility, biological_replicates), sep = "-", na.rm = T) %>% 
-  filter(!str_detect(assay_variable, '11|9')) %>% 
+  unite('Facility', c(Facility, biological_replicates), sep = "-", na.rm = T) %>%
+  
   mutate_cond(str_detect(Target, 'N'), `Recovery fraction` = NA, `Actual spike-in` = NA) %>% 
   select(Facility, WWTP, WW_vol, Target, CT, `Copy #`, Recovered, `Actual spike-in`, `Recovery fraction`) %>% 
-  rename('Copies/ul RNA' = `Copy #`, 'Copies/l WW' = Recovered, 'Spiked-in Copies/l WW' = `Actual spike-in`)
+  rename('Copies/ul RNA' = `Copy #`, 'Copies/l WW' = Recovered, 'Spiked-in Copies/l WW' = `Actual spike-in`) %>% 
+  mutate_at('Target', ~str_replace_all(., c('.*N1.*' = 'SARS CoV-2 N1', '.*N2.*' = 'SARS CoV-2 N2')))
 
 # presentable data for discussion with Baylor
 write_sheet(presentable_vol_qpcr,'https://docs.google.com/spreadsheets/d/1ltvW7xZf2aUPoBchD4NFGuV0gGWPkdsOW3a0Hxalm-Y/edit#gid=2113120147', sheet = title_name)  # save results to a google sheet
