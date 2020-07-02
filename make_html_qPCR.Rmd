@@ -1,7 +1,7 @@
 ---
 title: "WW21_601 redo + TR2"
 author: "Prashant Kalvapalle"
-date: "27 June 2020"
+date: "1 July 2020"
 output: 
   html_document:
     theme: flatly
@@ -22,8 +22,7 @@ source('./inputs_for_analysis.R') # Source the file with user inputs
 HA_concentration_factor <- 1000 # concentration factor of wastewater -> RNA
 
 # copies/ul viral suspension spiked in (Spike ID: S13)
-spike_virus_conc <- 35614.1
-all_spike_virus_conc <- tibble(Target = c('BCoV_M', 'BRSV_N'), c(35614.1, 56996.1) )
+all_spike_virus_conc <- tibble(Target = c('BCoV_M', 'BRSV_N'), spike_virus_conc = c(35614.1, 56996.1))
 
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
@@ -111,23 +110,25 @@ open circles : Viral copies spiked in
 # Get volumes data from google sheet : "Sample registry"
 volumes_data <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=521099478', sheet = 'Concentrated samples', range = 'A:F') %>% 
   rename('WW_vol' = `Total WW vol measured (ml)`, 'Label_tube' = `Label on tube`) %>% 
-    mutate('WW_vol' = coalesce(WW_vol, `Total WW volume calculated (ml)`) ) %>% 
+  mutate('WW_vol' = coalesce(WW_vol, `Total WW volume calculated (ml)`) ) %>% 
   select(WW_vol, Label_tube) %>% 
   distinct() %>% 
   mutate_at('Label_tube', ~str_remove_all(., " "))
   
 # join the results with the WWTP identifiers and names
 vol_qpcr <- bb_qpcr %>% left_join(volumes_data, by = 'Label_tube') %>% 
+  left_join(all_spike_virus_conc, by = 'Target') %>% 
   # Calculations for spiked in and recovered copies of the virus
   mutate(`Actual spike-in` = spike_virus_conc * spike_virus_volume / (WW_vol * 1e-3), Recovered = `Copy #` * 1e6/HA_concentration_factor, `Recovery fraction` = 100 * Recovered/`Actual spike-in`) %>% 
-  mutate_cond(str_detect(`Sample Name`, 'Vaccine'), `Actual spike-in` = spike_virus_conc * spike_virus_volume / (.050 * 1e-3), Recovered = `Copy #` * 1e6/1, `Recovery fraction` = 100 * Recovered/`Actual spike-in`)
+  mutate_cond(str_detect(`Sample Name`, 'Vaccine'), `Actual spike-in` = spike_virus_conc * spike_virus_volume / (.050 * 1e-3), Recovered = `Copy #` * 1e6 * 50/20, `Recovery fraction` = 100 * Recovered/`Actual spike-in`) %>% 
+  select(-spike_virus_conc)
  
 ```
 
 
 ```{r summarizing_plot, fig.width= 8.5}
 
-spike_qpcr <- vol_qpcr %>% filter(str_detect(Target, 'BCoV|BRSV')) %>% select(-c(3,4,6,7,8)) %>% 
+spike_qpcr <- vol_qpcr %>% select(-c(3,4,6,7,8)) %>% 
   mutate_at(c('WWTP', 'FACILITY NAME'), ~str_replace_all(., translate_id_manual)) %>% 
   separate(WWTP, c('WWTP', 'tmp'), sep = '/') %>% 
   mutate_cond(str_detect(`Sample Name`, 'TR'), 'Sample Name' = WWTP, 'WWTP' = tmp) %>% 
@@ -151,11 +152,16 @@ reco_plot %>%  format_logscale_y() %>% print()
 
 ### % recovery
 
-```{r percentreco, fig.width= 6}
+```{r percentreco, fig.width= 8.5}
 
-long_smallpercent <- list(long_vol_qpcr_summary, long_vol_qpcr_raw) %>% map(., ~ filter(., !str_detect(`Sample Name`, 'Bead|NTC'))) %>% setNames(c('summary', 'raw'))
+# Plot the % recoveries
+plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
+
+# Choose data with smaller % recoveries - exclude categories with higher %
+long_smallpercent <- list(long_vol_qpcr_summary, long_vol_qpcr_raw) %>% map(., ~ filter(., !str_detect(`Sample Name`, 'Bead|NTC|Vaccine'))) %>% setNames(c('summary', 'raw'))
 
 plot_mean_sd_jitter(long_smallpercent$summary, long_smallpercent$raw, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
+
 ```
 
 ## Special categories
