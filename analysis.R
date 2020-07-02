@@ -11,6 +11,7 @@ source('./inputs_for_analysis.R') # Source the file with user inputs
 # Data input ----
 
 templates_sheet <- 'https://docs.google.com/spreadsheets/d/19oRiRcRVS23W3HqRKjhMutJKC2lFOpNK8aNUkC-No-s/edit#gid=478762118'
+title_name <- '601 extra Rice'
 
 # Preperation steps
 flpath <- str_c('excel files/',flnm,'.xls') # this completes the file path

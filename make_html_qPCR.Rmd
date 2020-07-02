@@ -27,8 +27,8 @@ all_spike_virus_conc <- tibble(Target = c('BCoV_M', 'BRSV_N'), spike_virus_conc 
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
 # sheets to read from qPCR data dump excel file
-read_these_sheets <- c('WW21-4_TR2 622') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
-title_name <- 'TR2 6/22' # name of the filename for writing presentable data and plot title
+read_these_sheets <- c('WW21_601 redo') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
+title_name <- '601 redo + 625 Rice' # name of the filename for writing presentable data and plot title
 
 # Biobot ID sheet to draw sample names from
 bb_sheets <- c('Week 8 (6/1)')
@@ -189,7 +189,7 @@ presentable_vol_qpcr <- vol_qpcr %>% rename('Facility' = `FACILITY NAME`) %>%
 write_sheet(presentable_vol_qpcr,'https://docs.google.com/spreadsheets/d/1ltvW7xZf2aUPoBchD4NFGuV0gGWPkdsOW3a0Hxalm-Y/edit#gid=2113120147', sheet = title_name)  # save results to a google sheet
   
 
-present_N_data <- presentable_vol_qpcr %>% filter(!str_detect(Facility, "Vaccine|NTC|Blank"), str_detect(Target, "^N")) %>%  # select only N1,N2 - remove distracting data
+present_N_data <- presentable_vol_qpcr %>% filter(!str_detect(Facility, "Vaccine|NTC|Blank"), str_detect(Target, "^SARS.*N")) %>%  # select only N1,N2 - remove distracting data
 select(-`Recovery fraction`, -`Spiked-in Copies/l WW`)
 # presentable data for health department
 write_sheet(present_N_data,'https://docs.google.com/spreadsheets/d/1dBESjgWSFsOBodFFpYNhWIOAQ2a3wvoLkrn12V_rFck/edit#gid=0', sheet = title_name) # save results to a google sheet
