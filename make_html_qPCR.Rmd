@@ -27,7 +27,7 @@ spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 
 
 # sheets to read from qPCR data dump excel file
 read_these_sheets <- c('WW27_Test_pMMoV') # sheet name(s) in the raw data file (qPCR data dump) - Separate by comma (,)
-title_name <- 'test pMMoV' # name of the filename for writing presentable data and plot title
+title_name <- 'WW27_Test pMMoV' # name of the filename for writing presentable data and plot title
 
 # Biobot ID sheet to draw sample names from
 bb_sheets <- c('Week 10 (6/15)', 'Week 11 (6/22)', 'Week 12 (6/29)')
@@ -107,6 +107,26 @@ summary_bb_qpcr$WWTP %<>%  fct_relevel(levels = WWTP_order_1) # order samples by
 plot_mean_sd_jitter(summary_bb_qpcr, bb_qpcr, sample_var = extra_categories, exclude_sample = T, x_var = WWTP) %>% format_logscale_y() %>% print()
 
 ```
+
+### Weekly comparison
+
+```{r weekoverlap}
+
+plt_week1 <- plot_mean_sd_jitter(summary_bb_qpcr, bb_qpcr, sample_var = extra_categories, exclude_sample = T, x_var = WWTP, facet_var = NULL, colour_var = `Sample Name`)
+
+plt_week1 %>% print()
+plt_week1 %>% format_logscale_y() %>% print()
+```
+
+### Week timeseries
+
+```{r weekoverlap}
+
+plt_week1 <- plot_mean_sd_jitter(summary_bb_qpcr, bb_qpcr, sample_var = extra_categories, exclude_sample = T, x_var = `Sample Name`, facet_var = WWTP, colour_var = NULL) + geom_line(aes(group = Target))
+
+plt_week1 %>% format_logscale_y() %>% print()
+```
+
 
 ### Recovery
 
