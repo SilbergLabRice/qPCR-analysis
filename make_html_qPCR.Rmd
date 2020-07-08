@@ -120,11 +120,12 @@ plt_week1 %>% format_logscale_y() %>% print()
 
 ### Week timeseries
 
-```{r weekoverlap}
+```{r weektimeseries}
 
 plt_week1 <- plot_mean_sd_jitter(summary_bb_qpcr, bb_qpcr, sample_var = extra_categories, exclude_sample = T, x_var = `Sample Name`, facet_var = WWTP, colour_var = NULL) + geom_line(aes(group = Target))
 
 plt_week1 %>% format_logscale_y() %>% print()
+plt_week1 %>% print()
 ```
 
 
