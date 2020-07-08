@@ -1,5 +1,5 @@
 ---
-title: "WW19_615 BCoV"
+title: "615 Rice"
 author: "Prashant Kalvapalle"
 date: "25 June 2020"
 output: 
@@ -11,7 +11,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 12, fig.height = 4)
+knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.width = 14, fig.height = 4)
 
 # Loading libraries, functions and user inputs
 source('./general_functions.R') # Source the general_functions file
@@ -20,7 +20,7 @@ source('./inputs_for_analysis.R') # Source the file with user inputs
 
 # Spike in and concentration details
 HA_concentration_factor <- 1000 # concentration factor of wastewater -> RNA
-spike_virus_conc <- (22123) * 5/4 # copies/ul viral suspension spiked in (Spike ID: S12; correction included)
+spike_virus_conc <- (5430.3) * 5/4 # copies/ul viral suspension spiked in (Spike ID: S12; correction included)
 spike_virus_volume <- 50 # ul of viral suspension spiked in x ml WW; (x ~ 350 - 450 and varies for each sample)
 
 # sheets to read from qPCR data dump excel file
@@ -31,7 +31,7 @@ title_name <- '6/15 Rice'
 bb_sheets <- c('Week 10 (6/15)')
 
 # Extra categories for plotting separately (separate by | like this 'Vaccine|Troubleshooting')
-extra_categories = 'TR'
+extra_categories = 'TR|Std'
 target_order <- c('BCoV', 'N1_multiplex', 'N2_multiplex')
 
 ```
@@ -102,7 +102,7 @@ open circles : Viral copies spiked in
 
 # Get volumes data from google sheet : "Sample registry"
 volumes_data <- read_sheet('https://docs.google.com/spreadsheets/d/1mJcCt1wMiOuBic6sRlBZJf8KSNu2y-B5PjzCUu7jPM8/edit#gid=521099478', sheet = 'Concentrated samples', range = 'A:D') %>% 
-  rename('WW_vol' = `Total WW vol (ml)`, 'Label_tube' = `Label on tube`) %>% 
+  rename('WW_vol' = `Total WW vol measured (ml)`, 'Label_tube' = `Label on tube`) %>% 
   select(WW_vol, Label_tube) %>% 
   fill(WW_vol) %>% distinct() %>% 
   mutate_at('Label_tube', ~str_remove_all(., " "))
