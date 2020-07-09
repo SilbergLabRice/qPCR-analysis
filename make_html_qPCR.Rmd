@@ -289,12 +289,12 @@ presentable_vol_qpcr <- vol_qpcr %>%
   
   # renaming variables
   rename('Facility' = `FACILITY NAME`, 'Original Sample Volume' = WW_vol, Ct = CT, 'Target Name' = Target) %>%
-  rename('Copies/ul RNA' = `Copy #`, 'Copies/l WW' = Recovered, 'Spiked-in Copies/l WW' = `Actual spike-in`) %>%
+  rename('Copies/ul RNA' = `Copy #`, 'Copies/l WW' = Recovered, 'Spiked-in Copies/l WW' = `Actual spike-in`, 'Date' = `Sample Name`) %>%
   
   # Adding new variables, modifying existing variables
-  mutate(Date = 'NA', Lab = 'R', 'Volume Filtered' = 50, Bottle = NA) %>% 
-  mutate_at('Sample Name', ~as.character(.)) %>%
-  mutate_at('Facility', ~if_else(. == assay_variable, str_c(`Sample Name`, '/', assay_variable), .)) %>%
+  mutate(Lab = 'R', 'Volume Filtered' = 50, Bottle = NA) %>% 
+  mutate_at('Date', ~as.character(.)) %>%
+  mutate_at('Facility', ~if_else(. == assay_variable, str_c(Date, '/', assay_variable), .)) %>%
   
   # Arrange rows by WWTP facility 
   arrange(Facility, biological_replicates) %>%
