@@ -178,7 +178,16 @@ if(spike_qpcr %>% plyr::empty() %>% !.) {
 # Below code and plots executed only if spike quantification exists in the data
 spike_qpcr %>% plyr::empty() %>% if(!.)
 {
-  plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = str_c(extra_categories, '|Vaccine'), exclude_sample = T, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Fraction of spike-in recovered') %>% print()
+  plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = str_c(extra_categories, '|Vaccine'), exclude_sample = T, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, ylabel = 'Percentage of spike-in recovered') %>% print()
+ 
+  # reordering by % recovery
+  WWTP_order_2 <- long_vol_qpcr_summary %>% filter( str_detect(Measurement,'Recovery fraction')) %>% arrange(`mean`) %>% pull(WWTP) %>% as.character() # order samples by ascending order of BCoV
+  
+  long_vol_qpcr_summary$WWTP %<>% fct_relevel(levels = WWTP_order_2) 
+  
+  # Excluding water and NTC - plotting without facets
+  plot_mean_sd_jitter(long_vol_qpcr_summary, long_vol_qpcr_raw, sample_var = str_c(extra_categories, '|Vaccine|NTC|Water'), exclude_sample = T, long_format = T,  measure_var = 'Recovery fraction', x_var = WWTP, facet_var = NULL, ylabel = 'Percentage of spike-in recovered') %>% print()
+  
 }
   
 ```
